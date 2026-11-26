@@ -111,6 +111,10 @@ class Gateway:
             if self._sleepers == 0:
                 self._slept += time.monotonic() - self._sleeping_since
 
+    def time_is_short(self) -> bool:
+        """Whether the build has used a third of its gathering window: no time for another round of calls."""
+        return self.working_time() > self._settings.gather_window / 3
+
     def budget_left(self) -> int:
         return self._ledger.remaining()
 

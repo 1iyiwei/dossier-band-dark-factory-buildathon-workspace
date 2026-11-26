@@ -8,7 +8,8 @@ from the text a search or a plain extract serves. What is left of the budget aft
 and the research run reads as many pages as it pays for, the likeliest first. A page whose URL,
 title and snippet never name the company is first checked with a plain extract (1 unit) and is
 rendered only when the text it serves names the company: a page that never names it states
-nothing about it.
+nothing about it. When the providers are slow there is no time for that check and every page is
+rendered, so reading is one round of parallel calls after discovery.
 """
 from __future__ import annotations
 
@@ -90,7 +91,10 @@ class Builder:
         likely = {url: self._likelihood(found[url]) for url in found}
         sure = [url for url in found if url not in cited and self._names_company(found[url][0][1])]
         doubtful = sorted((url for url in found if url not in cited and url not in sure), key=lambda url: -likely[url])
-        mentioned = self._mentioning(doubtful[:int(budget * PREFILTER_SHARE)])
+        if self._gateway.time_is_short():       # slow providers: no time for the check, so render them all
+            mentioned, sure, doubtful = [], sure + doubtful, []
+        else:
+            mentioned = self._mentioning(doubtful[:int(budget * PREFILTER_SHARE)])
         for url in mentioned:
             likely[url] += MENTION_BONUS
         ranked = sorted(sure + mentioned, key=lambda url: -likely[url])
