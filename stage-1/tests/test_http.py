@@ -51,6 +51,33 @@ class HttpTests(unittest.TestCase):
         status, body = self.call("PUT", "/health")
         self.assertEqual((status, body["error"]["code"]), (404, "not_found"))
 
+    def test_empty_or_non_object_body_is_malformed(self):
+        for path in ("/_test/import", "/_test/reset", "/_test/clock", "/auth/signup", "/auth/login", "/dossiers"):
+            for body in ("", "  \n", "[]", "null"):
+                with self.subTest(path=path, body=body):
+                    status, error = self.call("POST", path, body, {"Idempotency-Key": "k"})
+                    self.assertEqual((status, error["error"]["code"]), (400, "malformed_request"))
+
+    def test_null_required_field_is_wrong_type(self):
+        for path, body in (("/dossiers", {"domain": None}), ("/_test/clock", {"now": None}),
+                           ("/auth/login", {"email": None, "password": "x"})):
+            with self.subTest(path=path):
+                status, error = self.call("POST", path, json.dumps(body), {"Idempotency-Key": "k"})
+                self.assertEqual((status, error["error"]["code"]), (400, "malformed_request"))
+        status, error = self.call("POST", "/dossiers", "{}", {"Idempotency-Key": "k"})
+        self.assertEqual((status, error["error"]["code"]), (422, "validation_failed"))
+
+    def test_unauthenticated_empty_body_is_401(self):
+        self.conn.request("POST", "/dossiers", "", {"Idempotency-Key": "k"})
+        response = self.conn.getresponse()
+        response.read()
+        self.assertEqual(response.status, 401)
+
+    def test_refresh_ignores_its_body(self):
+        self.call("POST", "/dossiers", '{"domain":"acme.test"}', {"Idempotency-Key": "a"})
+        status, body = self.call("POST", "/dossiers/acme.test/refresh", "not json", {"Idempotency-Key": "b"})
+        self.assertEqual((status, body["domain"]), (202, "acme.test"))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -307,14 +307,12 @@ def _is_int(value) -> bool:
 
 
 def _parse_fixture(fixture: dict) -> tuple[datetime, list[dict]]:
-    if "now" not in fixture or fixture["now"] is None:
+    if "now" not in fixture:
         raise validation_failed("fixture needs now")
     if not isinstance(fixture["now"], str):
         raise malformed("now must be a string")
     now = parse_timestamp(fixture["now"])
-    raw_users = fixture.get("users")
-    if raw_users is None:
-        raw_users = []
+    raw_users = fixture.get("users", [])
     if not isinstance(raw_users, list):
         raise malformed("users must be a list")
     users, ids, emails = [], set(), set()
@@ -323,9 +321,9 @@ def _parse_fixture(fixture: dict) -> tuple[datetime, list[dict]]:
             raise malformed("each user must be an object")
         user = {}
         for name in ("id", "email", "password", "display_name"):
-            value = raw.get(name)
-            if value is None:
+            if name not in raw:
                 raise validation_failed(f"user needs {name}")
+            value = raw[name]
             if not isinstance(value, str):
                 raise malformed(f"user {name} must be a string")
             user[name] = value

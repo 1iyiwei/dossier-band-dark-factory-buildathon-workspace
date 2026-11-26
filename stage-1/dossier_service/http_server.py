@@ -81,10 +81,8 @@ class Handler(BaseHTTPRequestHandler):
             self.rfile.readline(65537)                      # CRLF after the chunk
 
     def _json_object(self) -> dict:
-        """The JSON object in the body ({} when there is no body)."""
+        """The JSON object in the body; an empty body is not valid JSON."""
         raw = self._body
-        if not raw.strip():
-            return {}
         try:
             parsed = json.loads(raw.decode("utf-8"))
         except (ValueError, UnicodeDecodeError):
@@ -172,9 +170,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def _set_clock(self):
         body = self._json_object()
-        now = body.get("now")
-        if now is None:
+        if "now" not in body:
             raise validation_failed("now is required")
+        now = body["now"]
         if not isinstance(now, str):
             raise malformed("now must be a string")
         self.server.store.clock.advance_to(parse_timestamp(now))
@@ -193,9 +191,9 @@ class Handler(BaseHTTPRequestHandler):
         body = self._json_object()
         values = []
         for name in names:
-            value = body.get(name)
-            if value is None:
+            if name not in body:
                 raise validation_failed(f"{name} is required")
+            value = body[name]
             if not isinstance(value, str):
                 raise malformed(f"{name} must be a string")
             values.append(value)
@@ -225,9 +223,9 @@ class Handler(BaseHTTPRequestHandler):
         store = self.server.store
 
         def action():
-            domain = body.get("domain")
-            if domain is None:
+            if "domain" not in body:
                 raise validation_failed("domain is required")
+            domain = body["domain"]
             if not isinstance(domain, str):
                 raise malformed("domain must be a string")
             normalised = parse_domain(domain)
