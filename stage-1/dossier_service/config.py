@@ -28,7 +28,7 @@ class Settings:
             return cls(_port(), True, call_timeout=45.0, research_timeout=150.0,
                        gather_window=200.0, research_start_limit=130.0, hard_limit=285.0)
         return cls(_port(), False, call_timeout=12.0, research_timeout=12.0,
-                   gather_window=60.0, research_start_limit=60.0, hard_limit=90.0)
+                   gather_window=6.0, research_start_limit=6.0, hard_limit=20.0)
 
 
 def _port() -> int:

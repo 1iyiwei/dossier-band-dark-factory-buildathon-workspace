@@ -8,6 +8,7 @@ from .service import create_store
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     settings = Settings.from_env()
     server = Server(("0.0.0.0", settings.port), create_store(settings))
     logging.getLogger("dossier").info("listening on 0.0.0.0:%d (live=%s)", settings.port, settings.live)

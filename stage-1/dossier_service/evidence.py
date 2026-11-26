@@ -64,11 +64,19 @@ class Evidence:
     # ------------------------------------------------------------ source quality
 
     def weight(self, url: str) -> float:
+        """How far to trust a page: the company's own site and registry filings most, aggregators least.
+
+        A page that calls itself ``own`` but is registered to someone else (a parked or
+        look-alike site) is worth no more than an aggregator.
+        """
         page = self.pages[url]
+        host_is_company = page.host == self.domain or page.host.endswith("." + self.domain)
+        registrant = page.header.get("Registrant", "").lower()
+        if page.kind == "own":
+            return _KIND_WEIGHT["own"] if host_is_company or registrant == self.domain else _KIND_WEIGHT["aggregator"]
         if page.kind in _KIND_WEIGHT:
             return _KIND_WEIGHT[page.kind]
-        own = page.host == self.domain or page.host.endswith("." + self.domain)
-        return _KIND_WEIGHT["own"] if own else _UNKNOWN_KIND_WEIGHT
+        return _KIND_WEIGHT["own"] if host_is_company else _UNKNOWN_KIND_WEIGHT
 
     def _date(self, url: str) -> str:
         header = self.pages[url].header

@@ -138,7 +138,7 @@ class Builder:
             try:
                 return call()
             except (CallFailed, BuildStopped, BudgetExhausted) as failure:
-                log.info("call skipped: %s", failure)
+                log.info("call skipped: %r", failure)
                 return None
 
         return list(self._pool.map(guarded, calls))
