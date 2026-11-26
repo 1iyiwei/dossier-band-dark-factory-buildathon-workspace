@@ -107,7 +107,7 @@ ENDPOINTS = [("GET", "/dossiers"), ("GET", "/dossiers/acme.test"),
 
 
 @pytest.mark.parametrize("method,path", ENDPOINTS)
-@pytest.mark.parametrize("auth", [None, "Bearer", "Bearer ", "Bearer nope", "Basic abc",
+@pytest.mark.parametrize("auth", [None, "Bearer", "Bearer a b", "Bearer nope", "Basic abc",
                                   "Token abc", "nope"])
 def test_endpoints_need_a_valid_bearer_token(world, method, path, auth):
     """AU-8 AU-9 AU-12 (also: 401 even when the idempotency key is missing/body invalid)"""

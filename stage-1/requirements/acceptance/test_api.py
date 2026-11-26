@@ -28,7 +28,10 @@ def test_normalisation_in_body(world, raw, norm):
     j = ok_json(r, 202)
     assert j["domain"] == norm and j["state"] == "building" and isinstance(j["dossier_id"], str)
     assert len(j["dossier_id"]) <= 64
-    assert world.dossier(world.ada, norm)["domain"] == norm
+    if not norm.startswith("www."):       # a stored 'www.x' domain cannot be addressed (RULINGS 26)
+        assert world.dossier(world.ada, norm)["domain"] == norm
+    else:
+        assert [d["domain"] for d in ok_json(world.ada.get("/dossiers"))["dossiers"]] == [norm]
 
 
 @pytest.mark.parametrize("raw", [
@@ -49,8 +52,10 @@ def test_domain_missing_or_wrong_type(world):
     k = new_key
     err(world.ada.post("/dossiers", body={}, key=k()), 422, "validation_failed")
     err(world.ada.post("/dossiers", body={"Domain": "a.test"}, key=k()), 422, "validation_failed")
-    for bad in (5, ["a.test"], {"domain": "a.test"}, True, None):
+    for bad in (5, ["a.test"], {"domain": "a.test"}, True):
         err(world.ada.post("/dossiers", body={"domain": bad}, key=k()), 400, "malformed_request")
+    r = world.ada.post("/dossiers", body={"domain": None}, key=k())      # null: 400 or 422 (RULINGS 27)
+    assert r.status_code in (400, 422)
     err(world.ada.post("/dossiers", raw=b"{nope", key=k()), 400, "malformed_request")
     err(world.ada.post("/dossiers", raw=b"", key=k()), 400, "malformed_request")
     err(world.ada.post("/dossiers", raw=b"[]", key=k()), 400, "malformed_request")

@@ -73,3 +73,22 @@ these readings; a rule marked **T** is asserted, **L** means tests are deliberat
     corpus has other draws, so tests do not depend on provider ordering.
 25. **Email normalisation, `a@b` as an address, duplicate emails differing only in case, and a
     whitespace-only `display_name`** are unspecified: not tested.
+26. **A dossier named `www.x` (from `www.www.x`) is not addressable by path (ruled).** §4 normalisation
+    is not idempotent: the POST response and the list carry `www.x`, `GET /dossiers/www.x` normalises to
+    `x` and gives 404. Accepted as spec-consistent; tests only check POST 202 + list; export/import of such
+    a dossier must work (§10).
+27. **`null` for a required body field (ruled).** `null` is a JSON type other than string, so
+    `{"domain": null}` is 400 `malformed_request` (wrong type), preferred; 422 is tolerated by the test.
+28. **Empty or whitespace-only body (ruled).** Not valid JSON: 400 `malformed_request` on every endpoint
+    that reads a body (signup, login, POST /dossiers, reset, clock, import); `POST …/refresh` ignores
+    any body. Tests assert 400 strictly. Auth (401) still comes first on authenticated routes.
+29. **Implementer rulings (reviewed).** (1) non-whole-dollar amount / decimal headcount ignored rather
+    than disqualifying the excerpt: *rejected as a reading of A.2.5* only if it makes a mixed sentence
+    (e.g. `raised $0.0000005 million and $3M`) supported for 3 M — but §A.5 says such an amount "is not a
+    value", so it is not a value of the sentence and cannot conflict: **accepted**. A headcount with a
+    decimal part (`12.5 people`) is not a headcount value either (A.4 "no decimal part"): **accepted**.
+    (2) whole-sentence citations only: **accepted** (strictly safer; RULINGS 1–2). (3) four digits, no comma:
+    **accepted** (RULINGS 8). (4) empty body = {}: **rejected**, see 28. (5) null = missing: see 27.
+    (6) export during a build → after import `failed`, all unknown, spent 0 when no build had completed:
+    **accepted** ("holds the dossier as it was before that build"). (7) mock-mode 6 s window / live 45 s,
+    150 s, 285 s: accepted for BD-4/BD-5 (live ≥30 s per call, ends <300 s); Reviewer inspects.

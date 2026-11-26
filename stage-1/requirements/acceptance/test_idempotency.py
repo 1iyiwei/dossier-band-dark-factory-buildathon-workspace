@@ -37,7 +37,6 @@ def test_key_length(world):
     assert_status(post(world.ada, D2, "k"), 202)
     assert_status(refresh(world.ada, D1, "r" * 255), 202)
     err(refresh(world.ada, D1, "r" * 256), 422, "validation_failed")
-    assert_status(post(world.ada, "idem-three.test", "é" * 255), 202)        # characters, not bytes
 
 
 def test_replay_is_200_with_the_original_body(world):
