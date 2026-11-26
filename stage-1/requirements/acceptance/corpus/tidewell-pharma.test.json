@@ -1,0 +1,45 @@
+{
+ "domain": "tidewell-pharma.test",
+ "names": [
+  "Tidewell Pharma"
+ ],
+ "pages": [
+  {
+   "url": "https://tidewell-pharma.test/about",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "about - tidewell-pharma.test",
+   "text": "Tidewell Pharma plc is the registered company behind the Tidewell brand.\nTidewell Pharma has its head office in San Sebastián, Spain.\nTidewell Pharma is led by chief executive officer Mary Anne Cole.\nTidewell Pharma was incorporated in 1987.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "tidewell-pharma.test"
+   }
+  },
+  {
+   "url": "https://tidewell-pharma.test/facts",
+   "kind": "news",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "facts - tidewell-pharma.test",
+   "text": "Tidewell Pharma has 1,200 employees.\nTidewell Pharma has raised 12.5 million dollars in funding.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "tidewell-pharma.test"
+   }
+  }
+ ],
+ "research": {}
+}
