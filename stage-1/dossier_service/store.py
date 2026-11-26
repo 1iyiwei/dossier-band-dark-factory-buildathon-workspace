@@ -16,7 +16,7 @@ from datetime import datetime
 
 from .builder import BuildResult
 from .clock import Clock, parse_timestamp
-from .domains import parse_domain
+from .domains import is_valid_domain
 from .errors import ApiError, malformed, validation_failed
 from .passwords import hash_password, verify_password
 from .support import FIELDS
@@ -391,7 +391,7 @@ def _parse_state(state: dict):
         if raw["state"] not in ("ready", "failed"):
             raise ValueError("bad dossier state")
         if not isinstance(raw["dossier_id"], str) or not isinstance(raw["domain"], str) \
-                or parse_domain(raw["domain"]) != raw["domain"] or not _is_int(raw["spent_units"]) \
+                or not is_valid_domain(raw["domain"]) or not _is_int(raw["spent_units"]) \
                 or raw["spent_units"] < 0 or raw["domain"] in dossiers or raw["dossier_id"] in ids:
             raise ValueError("bad dossier")
         ids.add(raw["dossier_id"])

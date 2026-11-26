@@ -15,6 +15,10 @@ With `NIMBLE_BASE_URL` unset or on `sdk.nimbleway.com` the service waits as long
 provider needs (45 s per search or extract, 150 s per research run, 285 s per build); against any
 other host it uses short timeouts. Tavily is not used: every call goes to Nimble.
 
+Domains are normalised once (spec §4): `POST /dossiers {"domain": "www.www.acme.test"}` creates the
+dossier `www.acme.test`, which `GET /dossiers/www.acme.test` cannot address, because that path
+normalises to `acme.test`.
+
 ## Design in brief
 
 * One Python process (`dossier_service/`), standard-library HTTP server, in-memory state behind a

@@ -83,3 +83,14 @@ class StoreTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ImportDomainTests(unittest.TestCase):
+    def test_export_with_www_prefixed_domain_imports(self):
+        store = Store(build_fn)
+        store.reset(FIXTURE)
+        store.start_dossier("www.acme.test")      # as created by {"domain": "www.www.acme.test"}
+        wait_built(store, "www.acme.test")
+        snapshot = store.export_state()
+        store.import_state(snapshot)
+        self.assertEqual(store.export_state(), snapshot)

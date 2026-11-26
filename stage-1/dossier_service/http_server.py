@@ -32,6 +32,7 @@ class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     timeout = 30
     server: Server
+    _body: bytes = b""
 
     def log_message(self, *args) -> None:
         pass
@@ -48,16 +49,40 @@ class Handler(BaseHTTPRequestHandler):
         if body:
             self.wfile.write(body)
 
-    def _raw_body(self) -> bytes:
+    def _read_body(self) -> bytes:
+        """The whole request body, Content-Length or chunked, read before routing.
+
+        Reading it up front keeps a keep-alive connection in step whatever the route does,
+        including requests refused before their body is looked at.
+        """
+        if "chunked" in (self.headers.get("Transfer-Encoding") or "").lower():
+            return self._read_chunked()
         try:
             length = int(self.headers.get("Content-Length") or 0)
         except ValueError:
+            self.close_connection = True
             raise malformed("bad Content-Length") from None
         return self.rfile.read(length) if length > 0 else b""
 
+    def _read_chunked(self) -> bytes:
+        chunks = []
+        while True:
+            size_line = self.rfile.readline(65537).split(b";")[0].strip()
+            try:
+                size = int(size_line, 16)
+            except ValueError:
+                self.close_connection = True
+                raise malformed("bad chunk size") from None
+            if size == 0:
+                while self.rfile.readline(65537).strip():   # optional trailers
+                    pass
+                return b"".join(chunks)
+            chunks.append(self.rfile.read(size))
+            self.rfile.readline(65537)                      # CRLF after the chunk
+
     def _json_object(self) -> dict:
         """The JSON object in the body ({} when there is no body)."""
-        raw = self._raw_body()
+        raw = self._body
         if not raw.strip():
             return {}
         try:
@@ -103,6 +128,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _dispatch(self, method: str) -> None:
         try:
+            self._body = self._read_body()
             status, payload = self._route(method, urlsplit(self.path))
         except ApiError as error:
             status, payload = error.status, {"error": {"code": error.code, "message": error.message}}
@@ -133,9 +159,6 @@ class Handler(BaseHTTPRequestHandler):
                 return self._get_dossier(unquote(rest))
             if method == "POST" and rest.endswith("/refresh"):
                 return self._refresh_dossier(path, unquote(rest[:-len("/refresh")]))
-        known = ("/health", "/auth/", "/dossiers", "/_test/")
-        if path.startswith(known):
-            raise ApiError(405, "method_not_allowed", "method not allowed for this path")
         raise ApiError(404, "not_found", "no such route")
 
     # ------------------------------------------------------------ control endpoints
