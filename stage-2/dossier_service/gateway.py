@@ -20,6 +20,7 @@ from .ledger import BudgetExhausted, Ledger
 from .support import FIELDS
 
 SEARCH_COST = 1                # every search is a nimble ``lite`` search
+EXTRACT_COST = 1               # per URL: the text Nimble serves
 RENDERED_EXTRACT_COST = 3      # per URL: Nimble loads the page in a browser
 RESEARCH_COST = 25
 PROVIDER = "nimble"
@@ -159,9 +160,16 @@ class Gateway:
 
     def extract_rendered(self, url: str) -> str | None:
         """The text a browser shows for ``url`` once it has loaded; None when the provider has no page for it."""
+        return self._extract(url, RENDERED_EXTRACT_COST, {"render": True})
+
+    def extract_plain(self, url: str) -> str | None:
+        """The text Nimble serves for ``url`` without loading it in a browser; None when it has no page for it."""
+        return self._extract(url, EXTRACT_COST, None)
+
+    def _extract(self, url: str, cost: int, options: dict | None) -> str | None:
         try:
-            response = self._call("extract", RENDERED_EXTRACT_COST, lambda: self._router.extract(
-                [url], provider=PROVIDER, data_apis=False, provider_options={"render": True}))
+            response = self._call("extract", cost, lambda: self._router.extract(
+                [url], provider=PROVIDER, data_apis=False, **({"provider_options": options} if options else {})))
         except CallFailed as failure:
             if isinstance(failure.__cause__, ExtractFailedError):
                 return None

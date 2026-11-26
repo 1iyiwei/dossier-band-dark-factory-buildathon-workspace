@@ -20,7 +20,7 @@ from .domains import is_valid_domain
 from .errors import ApiError, malformed, validation_failed
 from .passwords import hash_password, verify_password
 from .selection import KINDS, Candidate, candidate_of, field_of
-from .support import FIELDS
+from .support import FIELDS, supported_value
 
 log = logging.getLogger("dossier.store")
 
@@ -337,33 +337,57 @@ def _parse_fixture(fixture: dict) -> tuple[datetime, list[dict]]:
     return now, users
 
 
-def _parse_fields(raw: dict, researched_at: datetime | None) -> dict[str, dict]:
-    """The fields of an exported dossier, recomputed from their candidates by the selection rule.
-
-    A field of a stage-1 export has no candidates: its citations, which a provider served and
-    which support its value, become its candidates, with no kind or publication time and
-    retrieved when the dossier was last researched.
-    """
+def _parse_fields(raw: dict, researched_at: datetime | None, domain: str) -> dict[str, dict]:
+    """The fields of an exported dossier, recomputed from their candidates by the selection rule."""
     if set(raw) != set(FIELDS):
         raise ValueError("fields must be the six dossier fields")
+    for entry in raw.values():
+        if entry["status"] not in ("known", "contested", "unknown"):
+            raise ValueError("bad field status")
+    if all("candidates" in entry for entry in raw.values()):
+        found = {name: [_parse_candidate(name, c) for c in raw[name]["candidates"]] for name in FIELDS}
+        if any((entry["status"] == "unknown") != (not found[name]) for name, entry in raw.items()):
+            raise ValueError("field status does not match its evidence")
+    else:
+        found = _stage_one_candidates(raw, researched_at, domain)
+    return {name: field_of(found[name]) for name in FIELDS}
+
+
+def _stage_one_candidates(raw: dict, researched_at: datetime | None, domain: str) -> dict[str, list[Candidate]]:
+    """Candidates of a stage-1 export, which keeps only each field's value and its citations.
+
+    The export holds no served page text, so the text of a citation's page is known only as far
+    as its excerpt: that is a candidate for the field it cites and for every other field the
+    excerpt supports. They are retrieved when the dossier was last researched and have no kind
+    or publication time.
+    """
     retrieved_at = researched_at.isoformat() if researched_at is not None else None
-    out = {}
+    found: dict[str, list[Candidate]] = {name: [] for name in FIELDS}
+    seen: set[tuple[str, str, object]] = set()
+
+    def add(name: str, value: object, citation: dict) -> None:
+        candidate = _parse_candidate(name, {"value": value, "url": citation["url"], "excerpt": citation["excerpt"],
+                                            "provider": citation["provider"], "kind": None, "published_at": None,
+                                            "retrieved_at": retrieved_at})
+        if (name, candidate.url, candidate.value) not in seen:
+            seen.add((name, candidate.url, candidate.value))
+            found[name].append(candidate)
+
+    cited = []
     for name in FIELDS:
         entry = raw[name]
-        value, status = entry["value"], entry["status"]
-        if status not in ("known", "contested", "unknown"):
-            raise ValueError("bad field status")
-        if "candidates" in entry:
-            candidates = [_parse_candidate(name, c) for c in entry["candidates"]]
-        elif status == "known":
-            candidates = [_parse_candidate(name, {**c, "value": value, "kind": None, "published_at": None,
-                                                  "retrieved_at": retrieved_at}) for c in entry["citations"]]
-        else:
-            candidates = []
-        if (status == "unknown") != (not candidates):
+        if (entry["status"] == "known") != (entry["value"] is not None and bool(entry["citations"])) \
+                or (entry["status"] == "unknown" and entry["citations"]):
             raise ValueError("field status does not match its evidence")
-        out[name] = field_of(candidates)
-    return out
+        for citation in entry["citations"]:
+            add(name, entry["value"], citation)
+            cited.append(citation)
+    for citation in cited:
+        for name in FIELDS:
+            value = supported_value(name, citation["excerpt"], domain)
+            if value is not None:
+                add(name, value, citation)
+    return found
 
 
 def _parse_candidate(name: str, entry: dict) -> Candidate:
@@ -414,7 +438,7 @@ def _parse_state(state: dict):
         ids.add(raw["dossier_id"])
         researched = parse_timestamp(raw["researched_at"]) if raw["researched_at"] is not None else None
         dossiers[raw["domain"]] = Dossier(
-            raw["dossier_id"], raw["domain"], _parse_fields(raw["fields"], researched), researched,
+            raw["dossier_id"], raw["domain"], _parse_fields(raw["fields"], researched, raw["domain"]), researched,
             raw["spent_units"], raw["state"])
     idempotency = {}
     for raw in state["idempotency"]:

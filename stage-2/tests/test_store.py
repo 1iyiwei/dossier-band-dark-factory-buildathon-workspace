@@ -96,6 +96,23 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(self.store.get_dossier("acme.test")["fields"]["hq_city"]["candidates"], [])
         self.assertEqual(self.store.authenticate("tok"), "u_ada")
 
+    def test_stage_one_import_derives_candidates_for_every_field_a_cited_excerpt_supports(self):
+        excerpt = "Dana Ruiz, CEO of Acme, is based in Lisbon."
+        fields = {name: {"value": None, "status": "unknown", "citations": []}
+                  for name in ("legal_name", "founded_year", "headcount_range", "funding_total")}
+        fields["ceo"] = {"value": "Dana Ruiz", "status": "known", "citations": [
+            {"url": "https://acme.test/a", "excerpt": excerpt, "provider": "nimble"},
+            {"url": "https://acme.test/a", "excerpt": "Acme CEO: Dana Ruiz.", "provider": "nimble"}]}
+        fields["hq_city"] = {"value": "Lisbon", "status": "known", "citations": [
+            {"url": "https://acme.test/a", "excerpt": excerpt, "provider": "nimble"}]}
+        self.store.import_state({"track": "dossier", "format_version": 1, "state": {
+            "users": [], "tokens": {}, "idempotency": [], "dossier_counter": 1,
+            "dossiers": [{"dossier_id": "d_1", "domain": "acme.test", "state": "ready", "spent_units": 1,
+                          "researched_at": "2026-03-01T09:00:00+00:00", "fields": fields}]}})
+        stored = self.store.get_dossier("acme.test")["fields"]
+        self.assertEqual([c["value"] for c in stored["ceo"]["candidates"]], ["Dana Ruiz"])
+        self.assertEqual([c["value"] for c in stored["hq_city"]["candidates"]], ["Lisbon"])
+
     def test_invalid_import_changes_nothing(self):
         snapshot = self.store.export_state()
         with self.assertRaises(ApiError):

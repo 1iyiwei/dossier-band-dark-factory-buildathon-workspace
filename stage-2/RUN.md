@@ -38,13 +38,14 @@ normalises to `acme.test`.
 * `builder.py` spends the 80 units where they buy most: one `lite` search on the bare domain and one
   per field (1 unit each) name pages, one research run (25 units) names the pages its claims cite,
   and what is left reads pages through Nimble's rendered extract (3 units a page, cited pages
-  first, then the likeliest). Page text is read only from the rendered extract, because a search or
+  first, then the likeliest). A page whose URL, title and snippet never name the company is first
+  checked with a plain extract (1 unit) and rendered only if the text it serves names the company. Page text is read only from the rendered extract, because a search or
   a plain extract can serve text a browser does not show. `gateway.py` retries a 429 after 1.05 s
   (up to three times); that waiting does not count toward the build's time window.
 * `store.py` holds users, tokens, dossiers, idempotency records and the export/import format; reset
   and import bump an epoch so a build still running cannot change what follows. A stage-1 export
-  imports: each cited excerpt of a field becomes a candidate with no kind or publication time,
-  retrieved at the dossier's `researched_at`, and the field is recomputed by the selection rule.
+  imports: each cited excerpt becomes a candidate for its field and for every other field it supports,
+  with no kind or publication time, retrieved at the dossier's `researched_at`, and the field is recomputed by the selection rule.
 * `ui.py` and `static/` serve the browser UI, which reads the JSON API with the bearer token kept in
   `localStorage`. A research or refresh whose response is lost stays retryable with the same key.
 
