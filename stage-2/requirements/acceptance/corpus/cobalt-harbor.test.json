@@ -1,0 +1,135 @@
+{
+ "domain": "cobalt-harbor.test",
+ "names": [
+  "Cobalt Harbor"
+ ],
+ "pages": [
+  {
+   "url": "https://cobalt-harbor.test/about",
+   "kind": null,
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-20T10:30:00+02:00",
+   "true_from": null,
+   "title": "About",
+   "text": "Cobalt Harbor CEO: Ada Marsh.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "cobalt-harbor.test"
+   }
+  },
+  {
+   "url": "https://www.cobalt-harbor.test/team",
+   "kind": null,
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-20T10:30:00.250Z",
+   "true_from": null,
+   "title": "Team",
+   "text": "Cobalt Harbor CEO: Ben Cole.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "www.cobalt-harbor.test"
+   }
+  },
+  {
+   "url": "https://blog.cobalt-harbor.test/post",
+   "kind": null,
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-20",
+   "true_from": null,
+   "title": "Blog post",
+   "text": "Cobalt Harbor CEO: Cy Dunn.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "blog.cobalt-harbor.test"
+   }
+  },
+  {
+   "url": "https://wirecast-daily.test/cobalt",
+   "kind": "blog",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-30T00:00:00Z",
+   "true_from": null,
+   "title": "Cobalt notes",
+   "text": "Cobalt Harbor CEO: Di Evans.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "wirecast-daily.test"
+   }
+  },
+  {
+   "url": "https://cobalt-harbor.test/legacy",
+   "kind": "blog",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-20T10:30:00",
+   "true_from": null,
+   "title": "Legacy",
+   "text": "Cobalt Harbor CEO: Eve Ford.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "cobalt-harbor.test"
+   }
+  },
+  {
+   "url": "https://newsy-corner.test/cobalt",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-03-01T00:00:00Z",
+   "true_from": null,
+   "title": "Cobalt Harbor leadership",
+   "text": "Cobalt Harbor CEO: Gus Hill.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "newsy-corner.test"
+   }
+  },
+  {
+   "url": "https://cobalt-harbor.test/press",
+   "kind": "news",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-03-02T00:00:00Z",
+   "true_from": null,
+   "title": "Press",
+   "text": "Cobalt Harbor CEO: Hal Ivey.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "cobalt-harbor.test"
+   }
+  }
+ ],
+ "research": {}
+}

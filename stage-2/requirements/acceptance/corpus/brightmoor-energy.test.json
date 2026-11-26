@@ -1,0 +1,101 @@
+{
+ "domain": "brightmoor-energy.test",
+ "names": [
+  "Brightmoor Energy"
+ ],
+ "pages": [
+  {
+   "url": "https://brightmoor-energy.test/about",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "About Brightmoor Energy",
+   "text": "Brightmoor Energy is headquartered in Bristol.\nBrightmoor Energy was founded in 2003.\nBrightmoor Energy employs about 60 people.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "brightmoor-energy.test"
+   },
+   "static_text": "Brightmoor Energy is headquartered in Leeds.\nBrightmoor Energy was founded in 1999."
+  },
+  {
+   "url": "https://brightmoor-energy.test/legal",
+   "kind": "filing",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "Registration",
+   "text": "The legal name of Brightmoor Energy is Brightmoor Energy Ltd.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "brightmoor-energy.test"
+   }
+  },
+  {
+   "url": "https://brightmoor-energy.test/leadership",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": false,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "Leadership",
+   "text": "Brightmoor Energy CEO: Ravi Menon.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "brightmoor-energy.test"
+   },
+   "static_text": "Brightmoor Energy CEO: Tom Hale."
+  },
+  {
+   "url": "https://wirecast-daily.test/brightmoor-press",
+   "kind": "news",
+   "epochs": [
+    0
+   ],
+   "searchable": false,
+   "published_at": "2026-02-10T00:00:00Z",
+   "true_from": null,
+   "title": "Brightmoor press",
+   "text": "Brightmoor Energy is reportedly raising $7M in new funding.\nBrightmoor Energy has raised $5M in total funding to date.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "wirecast-daily.test"
+   },
+   "static_text": "Press release archive."
+  }
+ ],
+ "research": {
+  "nimble": {
+   "0": [
+    {
+     "field": "ceo",
+     "value": "Ravi Menon",
+     "url": "https://brightmoor-energy.test/leadership",
+     "excerpt": "Brightmoor Energy CEO: Ravi Menon."
+    },
+    {
+     "field": "funding_total",
+     "value": 7000000,
+     "url": "https://wirecast-daily.test/brightmoor-press",
+     "excerpt": "Brightmoor Energy is reportedly raising $7M in new funding."
+    }
+   ]
+  }
+ }
+}

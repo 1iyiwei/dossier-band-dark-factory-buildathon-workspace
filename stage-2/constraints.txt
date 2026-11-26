@@ -1,0 +1,3 @@
+# Versions the service was built and checked against; requirements.txt states the supported floor.
+webrouter==0.16.0
+nimble-python==1.6.0

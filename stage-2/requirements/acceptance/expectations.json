@@ -1,0 +1,330 @@
+{
+ "northwind-optics.test": {
+  "0": {
+   "legal_name": [
+    "K",
+    [
+     "Northwind Optics, Inc."
+    ]
+   ],
+   "hq_city": [
+    "K",
+    [
+     "Lisbon"
+    ]
+   ],
+   "ceo": [
+    "K",
+    [
+     "Mara Voss"
+    ]
+   ],
+   "founded_year": [
+    "K",
+    [
+     2009
+    ]
+   ],
+   "headcount_range": [
+    "K",
+    [
+     "51-200"
+    ]
+   ],
+   "funding_total": [
+    "K",
+    [
+     18000000
+    ]
+   ]
+  },
+  "1": {
+   "legal_name": [
+    "U"
+   ],
+   "hq_city": [
+    "K",
+    [
+     "Lisbon"
+    ]
+   ],
+   "ceo": [
+    "K",
+    [
+     "Tomas Klein"
+    ]
+   ],
+   "founded_year": [
+    "K",
+    [
+     2009
+    ]
+   ],
+   "headcount_range": [
+    "K",
+    [
+     "201-500"
+    ]
+   ],
+   "funding_total": [
+    "K",
+    [
+     25000000
+    ]
+   ]
+  }
+ },
+ "kestrel-freight.test": {
+  "0": {
+   "legal_name": [
+    "K",
+    [
+     "Kestrel Freight GmbH"
+    ]
+   ],
+   "hq_city": [
+    "U"
+   ],
+   "ceo": [
+    "K",
+    [
+     "Ines Duarte"
+    ]
+   ],
+   "founded_year": [
+    "K",
+    [
+     1998
+    ]
+   ],
+   "headcount_range": [
+    "U"
+   ],
+   "funding_total": [
+    "K",
+    [
+     12000000
+    ]
+   ]
+  }
+ },
+ "quillstone-bio.test": {
+  "0": {
+   "legal_name": [
+    "F",
+    [
+     "Quillstone Bio Ltd"
+    ]
+   ],
+   "hq_city": [
+    "K",
+    [
+     "Zürich"
+    ]
+   ],
+   "ceo": [
+    "K",
+    [
+     "Wen Zhao"
+    ]
+   ],
+   "founded_year": [
+    "F",
+    [
+     2011
+    ]
+   ],
+   "headcount_range": [
+    "F",
+    [
+     "51-200"
+    ]
+   ],
+   "funding_total": [
+    "K",
+    [
+     4000000
+    ]
+   ]
+  }
+ },
+ "tidewell-pharma.test": {
+  "0": {
+   "legal_name": [
+    "K",
+    [
+     "Tidewell Pharma plc"
+    ]
+   ],
+   "hq_city": [
+    "K",
+    [
+     "San Sebastián"
+    ]
+   ],
+   "ceo": [
+    "K",
+    [
+     "Mary Anne Cole"
+    ]
+   ],
+   "founded_year": [
+    "K",
+    [
+     1987
+    ]
+   ],
+   "headcount_range": [
+    "K",
+    [
+     "1001-5000"
+    ]
+   ],
+   "funding_total": [
+    "K",
+    [
+     12500000
+    ]
+   ]
+  }
+ },
+ "orchard-lane-foods.test": {
+  "0": {
+   "legal_name": [
+    "K",
+    [
+     "Orchard Lane Foods Limited"
+    ]
+   ],
+   "hq_city": [
+    "K",
+    [
+     "Stoke"
+    ]
+   ],
+   "ceo": [
+    "K",
+    [
+     "Anika Sørensen"
+    ]
+   ],
+   "founded_year": [
+    "K",
+    [
+     1999
+    ]
+   ],
+   "headcount_range": [
+    "K",
+    [
+     "51-200"
+    ]
+   ],
+   "funding_total": [
+    "K",
+    [
+     1234500
+    ]
+   ]
+  }
+ },
+ "bluefin-marine.test": {
+  "0": {
+   "legal_name": [
+    "K",
+    [
+     "Bluefin Marine Holdings Ltd"
+    ]
+   ],
+   "hq_city": [
+    "K",
+    [
+     "Scandinavia"
+    ]
+   ],
+   "ceo": [
+    "K",
+    [
+     "Lena Okafor"
+    ]
+   ],
+   "founded_year": [
+    "K",
+    [
+     2005,
+     2008
+    ]
+   ],
+   "headcount_range": [
+    "K",
+    [
+     "11-50",
+     "1001-5000"
+    ]
+   ],
+   "funding_total": [
+    "K",
+    [
+     3000000,
+     21000000
+    ]
+   ]
+  }
+ },
+ "no-trace.test": {
+  "0": {
+   "legal_name": [
+    "U"
+   ],
+   "hq_city": [
+    "U"
+   ],
+   "ceo": [
+    "U"
+   ],
+   "founded_year": [
+    "U"
+   ],
+   "headcount_range": [
+    "U"
+   ],
+   "funding_total": [
+    "U"
+   ]
+  }
+ },
+ "harbor-signal.test": {
+  "0": {
+   "legal_name": [
+    "U"
+   ],
+   "hq_city": [
+    "K",
+    [
+     "Oslo"
+    ]
+   ],
+   "ceo": [
+    "F",
+    [
+     "Priya Nair"
+    ]
+   ],
+   "founded_year": [
+    "K",
+    [
+     2012
+    ]
+   ],
+   "headcount_range": [
+    "U"
+   ],
+   "funding_total": [
+    "F",
+    [
+     2000000
+    ]
+   ]
+  }
+ }
+}

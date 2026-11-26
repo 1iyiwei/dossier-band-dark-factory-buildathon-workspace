@@ -1,0 +1,135 @@
+{
+ "domain": "driftwood-games.test",
+ "names": [
+  "Driftwood Games"
+ ],
+ "pages": [
+  {
+   "url": "https://driftwood-games.test/About",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-15T00:00:00Z",
+   "true_from": null,
+   "title": "About",
+   "text": "Driftwood Games CEO: Zed Quinn.\nDriftwood Games was founded in 2012.\nDriftwood Games was established in 2012.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "driftwood-games.test"
+   }
+  },
+  {
+   "url": "https://driftwood-games.test/about",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-15T00:00:00Z",
+   "true_from": null,
+   "title": "about",
+   "text": "Driftwood Games CEO: Amy Yu.\nDriftwood Games was founded in 2012.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "driftwood-games.test"
+   }
+  },
+  {
+   "url": "https://driftwood-games.test/about/",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-15T00:00:00Z",
+   "true_from": null,
+   "title": "about slash",
+   "text": "Driftwood Games was founded in 2012.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "driftwood-games.test"
+   }
+  },
+  {
+   "url": "https://wirecast-daily.test/driftwood-wire",
+   "kind": "news",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-02T00:00:00Z",
+   "true_from": null,
+   "title": "Wire",
+   "text": "Driftwood Games has raised $12M in funding.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "wirecast-daily.test"
+   }
+  },
+  {
+   "url": "https://bizlistings-hub.test/driftwood",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-03T00:00:00Z",
+   "true_from": null,
+   "title": "Listing",
+   "text": "Driftwood Games has raised 12 million dollars in funding.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "bizlistings-hub.test"
+   }
+  },
+  {
+   "url": "https://driftwood-games.test/team",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-15T00:00:00Z",
+   "true_from": null,
+   "title": "Team",
+   "text": "Driftwood Games employs about 120 people.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "driftwood-games.test"
+   }
+  },
+  {
+   "url": "https://driftwood-games.test/careers",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-15T00:00:00Z",
+   "true_from": null,
+   "title": "Careers",
+   "text": "Driftwood Games has 90 employees.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "driftwood-games.test"
+   }
+  }
+ ],
+ "research": {}
+}

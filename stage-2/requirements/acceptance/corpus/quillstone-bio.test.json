@@ -1,0 +1,81 @@
+{
+ "domain": "quillstone-bio.test",
+ "names": [
+  "Quillstone Bio"
+ ],
+ "pages": [
+  {
+   "url": "https://quillstone-bio.test/about",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "about - quillstone-bio.test",
+   "text": "Quillstone Bio develops enzyme therapies for rare diseases.\nQuillstone Bio is headquartered in Zürich.\nQuillstone Bio is not headquartered in Geneva.\nQuillstone Bio is reportedly based in Basel.\nQuillstone Bio is registered as Quillstone Biosciences Ltd.\nQuillstone Bio was formerly registered as Quillstone Bio Ltd.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "quillstone-bio.test"
+   }
+  },
+  {
+   "url": "https://quillstone-bio.test/people",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "people - quillstone-bio.test",
+   "text": "Former CEO Rosa Alvarez left Quillstone Bio in 2020.\nWen Zhao has been chief executive of Quillstone Bio since 2022.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "quillstone-bio.test"
+   }
+  },
+  {
+   "url": "https://quillstone-bio.test/funding",
+   "kind": "news",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "funding - quillstone-bio.test",
+   "text": "Quillstone Bio was founded in 2011 and raised $4M in 2013.\nQuillstone Bio is in talks to raise $40M.\nQuillstone Bio raised €30 million in 2019.\nQuillstone Bio plans to raise $60 million next year.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "quillstone-bio.test"
+   }
+  },
+  {
+   "url": "https://quillstone-bio.test/staff",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "staff - quillstone-bio.test",
+   "text": "Quillstone Bio employs 85 people in 3 labs.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "quillstone-bio.test"
+   }
+  }
+ ],
+ "research": {}
+}
