@@ -412,6 +412,7 @@
           ? h("p", { class: "field-note" }, "Sources disagree. Showing the value from the most authoritative, most recent source. ",
               h("a", { href: evidencePath + "#field-" + name }, "Compare all candidates"))
           : null,
+        name === "headcount_range" && hasValue ? h("p", { class: "hint" }, "The range that contains the headcount the sources state.") : null,
         status === "unknown" && !waiting ? h("p", { class: "hint" }, "No page read in the last build states this.") : null),
       h("div", { class: "citations", testid: "field-citations-" + name }, citations));
   }
@@ -615,7 +616,7 @@
           const field = res.data.fields[name];
           const candidates = field.candidates || [];
           return h("section", { class: "evidence-field", id: "field-" + name },
-            h("h2", {}, label, h("span", { class: "pill " + field.status }, field.status === "known" ? "Known" : field.status === "unknown" ? "Unknown" : "Contested"), h("span", { class: "chip mono" }, name)),
+            h("h2", {}, label, h("span", { class: "pill " + field.status }, field.status === "known" ? "Known" : field.status === "unknown" ? "Unknown" : "Contested")),
             h("div", { class: "candidates", testid: "evidence-" + name },
               candidates.length === 0
                 ? h("div", { class: "empty", testid: "evidence-empty-" + name }, h("strong", {}, "No candidates"), "No page read in the last build supports a value for this field.")
@@ -674,7 +675,7 @@
       }
       region.replaceChildren(h("div", { class: "cards", role: "list", testid: "contested-list" }, items.map(({ domain, name, field }) =>
         h("a", { class: "contested-item", role: "listitem", href: "/dossiers/" + encodeURIComponent(domain) + "/evidence", testid: `contested-item-${domain}-${name}`, "data-value": dataValue(field.value) },
-          h("span", { class: "contested-top" }, h("span", { class: "domain" }, domain), h("span", { class: "field-label" }, FIELD_LABELS[name]), h("span", { class: "chip mono" }, name)),
+          h("span", { class: "contested-top" }, h("span", { class: "domain" }, domain), h("span", { class: "field-label" }, FIELD_LABELS[name], h("span", { class: "sr-only", "aria-hidden": "true" }, " " + name))),
           h("span", { class: "values" }, distinctValues(field.candidates).map((v) =>
             h("span", { class: "value-chip" + (String(v).trim() === String(field.value).trim() ? " selected" : "") }, formatValue(name, v)))),
           h("span", { class: "muted" }, `Selected: ${formatValue(name, field.value)} · ${field.candidates.length} candidates`)))));

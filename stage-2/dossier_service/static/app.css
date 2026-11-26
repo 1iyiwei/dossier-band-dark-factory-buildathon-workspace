@@ -97,6 +97,7 @@ input:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; bord
 .btn.secondary:hover { background: var(--bg); border-color: var(--brand); color: var(--brand-strong); }
 .btn.quiet { background: transparent; color: var(--muted); border-color: transparent; padding-inline: 10px; min-height: 40px; }
 .btn.quiet:hover { background: var(--bg); color: var(--ink); border-color: transparent; }
+.btn { white-space: nowrap; }
 .btn[disabled] { opacity: 0.65; cursor: progress; }
 .btn.busy::before { content: ""; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
 
@@ -147,6 +148,7 @@ input:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; bord
 .chip.kind-news { background: #f1ecf8; border-color: #c9badf; color: #4a2f7a; }
 .chip.kind-aggregator, .chip.kind-imported { background: #f3f0e6; border-color: #d3cdb6; color: #5a512d; }
 .chip.selected { background: var(--known-bg); border-color: var(--known-line); color: var(--known-ink); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .mono { font-family: var(--mono); font-size: 0.92em; }
 
 /* ---- dossier list */
@@ -230,7 +232,8 @@ input:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; bord
   .page-head h1, .dossier-head h1 { font-size: 24px; }
   .field-value { font-size: 22px; }
   .form-row .btn { width: 100%; }
-  .toolbar .btn { flex: 1 1 140px; }
+  .toolbar .btn { flex: 1 1 0; }
+  .toolbar [data-testid="dossier-refresh"] { flex: 1 1 100%; }
   .nav { order: 3; flex-basis: 100%; }
   .session { margin-left: auto; }
 }
