@@ -355,11 +355,13 @@ def check_candidates(b, epoch=0, exact=True):
 
 
 def check_expect(b, epoch=0):
+    """Stage-1 labels (K: some whole sentence supports a value -> the field has a value, known or
+    contested; U: no support -> unknown; F: either). Exact stage-2 values: check_candidates."""
     exp = EXPECT[b["domain"]][str(epoch)]
     for name, lab in exp.items():
         fld = b["fields"][name]
         if lab[0] == "K":
-            assert fld["status"] == "known", f"{name} should be known ({lab[1]}), got {fld}"
+            assert fld["status"] in ("known", "contested"), f"{name} should have a value ({lab[1]}), got {fld}"
             assert fld["value"] in lab[1], f"{name}={fld['value']!r} not one of {lab[1]}"
         elif lab[0] == "U":
             assert fld["status"] == "unknown", f"{name} must be unknown, got {fld}"
@@ -401,3 +403,52 @@ def pytest_terminal_summary(terminalreporter):
         for label, k, u in _REPORT:
             terminalreporter.write_line(f"{label:40s} known={k}/6 spent={u} "
                                         f"({(k / u if u else 0):.3f} fields/unit)")
+
+
+# ------------------------------------------------------------------ browser (stage 2 screens)
+@pytest.fixture(scope="session")
+def _browser():
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        pytest.fail("playwright is required for the UI tests: pip install playwright && playwright install chromium")
+    with sync_playwright() as p:
+        b = p.chromium.launch(headless=not os.environ.get("HEADED"))
+        yield b
+        b.close()
+
+
+class Ui:
+    """Browser contexts for one test; collects page errors; signs in through /login."""
+    TO = 10000
+
+    def __init__(self, browser, world):
+        self.browser, self.w, self.ctxs, self.errors = browser, world, [], []
+
+    def page(self, width=1280, height=800, user=ADA, signed=True):
+        ctx = self.browser.new_context(base_url=BASE, viewport={"width": width, "height": height})
+        ctx.set_default_timeout(self.TO)
+        self.ctxs.append(ctx)
+        pg = ctx.new_page()
+        pg.on("pageerror", lambda e: self.errors.append(f"pageerror: {e}"))
+        pg.on("console", lambda msg: self.errors.append(f"console.error: {msg.text}")
+              if msg.type == "error" and "Failed to load resource" not in msg.text else None)
+        if signed:
+            self.sign_in(pg, user)
+        return pg
+
+    def sign_in(self, pg, user=ADA):
+        from playwright.sync_api import expect
+        pg.goto("/login")
+        pg.get_by_test_id("login-email").fill(user["email"])
+        pg.get_by_test_id("login-password").fill(user["password"])
+        pg.get_by_test_id("login-submit").click()
+        expect(pg.get_by_test_id("current-user")).to_be_visible(timeout=self.TO)
+
+
+@pytest.fixture
+def ui(pworld, _browser):
+    u = Ui(_browser, pworld)
+    yield u
+    for c in u.ctxs:
+        c.close()

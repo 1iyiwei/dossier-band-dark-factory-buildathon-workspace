@@ -3,6 +3,9 @@ own stage-1 service (BASE_URL_S1, wired to the same mock). IDs (S2-UP-*) in ../L
 
 The stage-1 service builds dossiers from the mock; its export is imported into the stage-2 service
 (BASE_URL); every claim below is checked against what the mock logged as served to that build."""
+import json
+import os
+import pathlib
 import time
 from types import SimpleNamespace
 
@@ -81,6 +84,8 @@ def up():
     exp = anon1.get("/_test/export")
     assert exp.status_code == 200
     u.export = exp.json()
+    if os.environ.get("DUMP_EXPORT"):
+        pathlib.Path(os.environ["DUMP_EXPORT"]).write_text(json.dumps(u.export, indent=1))
     assert_status(anon2.post("/_test/import", body=u.export, timeout=10), 204)
     u.log_after_import = len(mock.log())
     u.ada2 = Api(BASE, ada1.token)           # the token the client held before the upgrade
@@ -124,18 +129,28 @@ def test_sessions_accounts_and_retries_survive(up):
 
 
 @pytest.mark.parametrize("domain", DOMS)
-def test_every_imported_field_gains_a_candidate_for_each_supported_value_and_page(up, domain):
-    """S2-UP-5 S2-UP-6 S2-UP-7 S2-UP-8 (candidates = values supported by the text served to the last ready stage-1 build)"""
+def test_every_imported_field_gains_the_candidates_the_export_can_support(up, domain):
+    """S2-UP-5 S2-UP-6 S2-UP-7 S2-UP-8 (candidates: every exported citation, nothing the served text does not support,
+    and every supported (page, value) of a page the export records; kind/published null or the page's; retrieved_at =
+    researched_at; value/status/citations by the rule). The stage-1 export keeps only the selected citations, see RULINGS 55."""
     b = ok_json(up.ada2.get(f"/dossiers/{domain}"))
+    old = up.before[domain]
     sup = served_support(domain, up.windows[domain])
     ra = parse_ts(b["researched_at"])
     comp = CORPUS_S2[domain]
+    exported = json.dumps(up.export)
     for name in FIELDS:
         fld = b["fields"][name]
         m.check_field_consistency(name, fld, retrieved_at=ra)         # S2-UP-8: value/status/citations by the rule
         got = {(c["url"], c["value"]) for c in fld["candidates"]}
-        assert got == set(sup[name]), \
-            f"{domain} {name}: candidates {sorted(got, key=str)} != supported by served text {sorted(sup[name], key=str)}"
+        assert got <= set(sup[name]), \
+            f"{domain} {name}: candidates {sorted(got - set(sup[name]), key=str)} are not supported by any served text"
+        for c in old["fields"][name]["citations"]:                     # what the stage-1 service recorded and cited
+            assert (c["url"], old["fields"][name]["value"]) in got, f"{domain} {name}: exported citation {c['url']} lost"
+            assert any(x["excerpt"] == c["excerpt"] and x["provider"] == c["provider"] and x["url"] == c["url"]
+                       for x in fld["candidates"]), f"{domain} {name}: exported citation is not a candidate"
+        recorded = {(u_, v) for (u_, v) in sup[name] if u_ in exported}
+        assert recorded <= got, f"{domain} {name}: supported by a page the export records, yet no candidate: {sorted(recorded - got, key=str)}"
         for c in fld["candidates"]:
             assert parse_ts(c["retrieved_at"]) == ra, "S2-UP-7 retrieved_at is the dossier's researched_at"
             assert any(p == c["provider"] and o.collapse(c["excerpt"]) in o.collapse(s)
@@ -147,15 +162,6 @@ def test_every_imported_field_gains_a_candidate_for_each_supported_value_and_pag
             pub = m.page_published(page.get("published_at"))
             assert c["published_at"] is None or (pub and m.parse_rfc3339(c["published_at"]) == pub)
     assert any(f["candidates"] for f in b["fields"].values())
-
-
-def test_a_contested_dossier_imports_as_contested(up):
-    """S2-UP-8 S2-ST-2 (bluefin: own site and aggregator disagree on year, headcount and funding)"""
-    b = ok_json(up.ada2.get("/dossiers/bluefin-marine.test"))
-    for name in ("founded_year", "headcount_range", "funding_total"):
-        f = b["fields"][name]
-        assert f["status"] == "contested" and len(f["candidates"]) == 2, (name, f)
-        assert f["candidates"][0]["selected"] and not f["candidates"][1]["selected"]
 
 
 def test_a_dossier_that_never_completed_is_failed_and_unknown(up):

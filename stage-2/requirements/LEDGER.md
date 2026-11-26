@@ -1,4 +1,4 @@
-# LEDGER (stage 1)
+# LEDGER (stage 2: stage-1 rows carried forward, then S2-* rows)
 
 Kinds: T acceptance test (`requirements/acceptance`), RUN run.sh measurement, R review inspection, M measurement. Status: open / passing / failing / ruled.
 
@@ -39,7 +39,7 @@ Kinds: T acceptance test (`requirements/acceptance`), RUN run.sh measurement, R 
 | CV-7 | §5 | 400 `malformed_request`: Unparseable body, or a field of the wrong JSON type | T — test_auth.py | passing; ruled (see RULINGS 26-28) |
 | CV-8 | §5 | An integer-valued **query parameter** is written as plain decimal digits: `1e9`, `4.0` and `+4` are 422 `validation_failed` whatever their numeric value. | T — test_api.py | passing |
 | CV-9 | §5 | `Idempotency-Key` 1 to 255 characters; `limit` integer 1 to 200; `offset` integer 0 or more; otherwise 422 `validation_failed` | T — test_api.py | passing |
-| CV-10 | §5 | Requests must not produce 5xx responses, including under concurrent load and when a provider endpoint answers with an error. | T — test_concurrency.py | passing |
+| CV-10 | §5 | Requests must not produce 5xx responses, including under concurrent load and when a provider endpoint answers with an error. | T — test_concurrency.py, test_s2_api.py | passing |
 | CV-11 | §2 | Per-request timeout \| 5 s (10 s for `POST /_test/reset`) | T — test_concurrency.py | passing |
 | AU-1 | §6 | POST /auth/signup -> 201 { "user_id": "u_1", "display_name": "Ada", "token": "..." } | T — test_auth.py | passing |
 | AU-2 | §6 | POST /auth/login -> 200 { "user_id", "display_name", "token" } | T — test_auth.py | passing |
@@ -106,7 +106,7 @@ Kinds: T acceptance test (`requirements/acceptance`), RUN run.sh measurement, R 
 | BD-2 | §8 | A build ends in `ready` when it completed, or `failed` when none of its provider calls succeeded. A failed build leaves the fields as they were. | T — test_faults.py | passing |
 | BD-3 | §8 | When a build completes `ready`, each field is `known` exactly when the evidence (§4) supports a value for it. | T — test_builds.py | passing |
 | BD-4 | §8 | A build whose provider calls each answer within one second ends within 10 seconds of the request that started it. | T — test_builds.py | passing |
-| BD-5 | §8 | Against the live providers [...] a build does not give up on a call that has been waiting less than 30 seconds, nor stop gathering because of the time it has run in its first 120 seconds. It still ends `ready` or `failed` within 300 seconds. | T(proxy)+R — test_faults.py | passing (test/run); R part open: Reviewer inspection |
+| BD-5 | §8 | Against the live providers [...] a build does not give up on a call that has been waiting less than 30 seconds, nor stop gathering because of the time it has run in its first 120 seconds. It still ends `ready` or `failed` within 300 seconds. | T(proxy)+R — test_faults.py | failing: test_faults.py::test_slow_providers_are_waited_for_and_post_returns_at_once (ready but all fields unknown under 3 s provider delays; revision 6b5b566+) |
 | BD-6 | §8 | Reading a dossier, listing dossiers and every other request [...] make no provider call. (idempotent replays, validation failures, health) | T — test_api.py, test_idempotency.py | passing |
 | BD-7 | §1 | A dossier is built in the background, read any number of times, and refreshed on request. | T — test_api.py, test_faults.py | passing |
 | SU-1 | §1 | Every value the service asserts cites at least one excerpt that a provider endpoint served to this service, and that excerpt supports the value. No citation is invented, reworded, or attached to a value it does not support. | T — test_builds.py | passing |
@@ -141,7 +141,7 @@ Kinds: T acceptance test (`requirements/acceptance`), RUN run.sh measurement, R 
 | CO-5 | §9 | A call that a provider refuses with an error status costs nothing. | T — test_faults.py | passing |
 | CO-6 | §9 | A call whose answer does not arrive, because it times out or its connection fails, costs its units as in the table, whether or not the provider received it. | T(proxy)+R — test_faults.py | passing (test/run); R part open: Reviewer inspection |
 | CO-7 | §9 | A research request names the company by its domain in its query, and names the fields it asks for by the field names in §4, as the property names of its output schema. | T — test_builds.py | passing |
-| CO-8 | §9 | An extract through `nimble` does not set `render`. | T — test_builds.py | passing |
+| CO-8 | §9 | An extract through `nimble` does not set `render`. | T — test_builds.py | superseded by S2-WEB-1 (RULINGS 46); nimble extract 1 or 3 per URL |
 | CO-9 | §9 | A build stops making provider calls before its spending would exceed 80 units, and completes with the pages and research claims it has obtained. | T+R — test_builds.py | passing (test/run); R part open: Reviewer inspection |
 | CO-10 | §4 | A search that a provider answers with an error does not count. | T — test_faults.py | passing |
 | CO-11 | §9 | Cost table: nimble search 1/5/15, tavily 8/16/16, extract 1/2 per URL, research 25; a search returns at most 10 results (service accounting must match what the mock charges) | T+R — test_builds.py | passing (test/run); R part open: Reviewer inspection |
@@ -171,3 +171,122 @@ Kinds: T acceptance test (`requirements/acceptance`), RUN run.sh measurement, R 
 | AX-1 | — | [test infrastructure] Appendix A oracle agrees with the spec's own examples and edge cases | T — test_00_oracle.py | passing |
 | AX-4 | — | [test infrastructure] citation checker accepts valid and rejects invented/header/wrong-value/hedged citations | T — test_01_checker_selfcheck.py | passing |
 | AX-5 | — | [test infrastructure] corpus expectation labels agree with the oracle | T — test_01_checker_selfcheck.py | passing |
+| S2-DET-1 | S2 §3 | A field's selected value is the one the selection rule below picks from the field's candidates; the same candidates always yield the same value. | T — test_s2_api.py | passing |
+| S2-PG-1 | S2 Page kind | `Kind: own`, `Kind: filing`, `Kind: news`, `Kind: aggregator` \| The page's **kind**: the company's own site, a filing registry, a news report, or an aggregator of company data | T — test_s2_api.py | passing |
+| S2-PG-2 | S2 Page kind | A page with no `Kind` line, or with a value not listed above, is of kind `own` when the host of its URL, normalised as `stage-1.md` normalises a domain, is the company's domain, and of kind `aggregator` otherwise. | T — test_s2_api.py | passing |
+| S2-PG-3 | S2 Page kind | `Published: <RFC 3339 timestamp>` \| When the page was published (offsets and fractions are instants; two spellings of one instant are equal) | T — test_s2_api.py | passing |
+| S2-PG-4 | S2 Page kind | A page with no `Published` line, or with a value that is not an RFC 3339 timestamp, has no publication time. | T — test_s2_api.py | passing |
+| S2-PG-5 | S2 Candidates | `kind` is the page's kind, and `published_at` its publication time or null. | T — test_s2_api.py | passing |
+| S2-TX-1 | S2 Page text | a page's **text** is the text a browser shows once the page has loaded, without clicking controls. | T — test_s2_api.py | passing |
+| S2-TX-2 | S2 Page text | Evidence (§4) is read from page text so defined | T — test_s2_api.py | passing |
+| S2-TX-3 | S2 Page text | a citation's excerpt must appear in the page's text. A citation's `provider` is the provider that served the text the excerpt was copied from. | T — test_s2_api.py | passing |
+| S2-TX-4 | S2 Page text | Activating disclosure controls is not required. The graded corpus contains no facts that require a click to reveal them. | R | ruled: statement about the graded corpus, not testable; Reviewer notes only |
+| S2-WEB-1 | S2 Web access | an extract through `nimble` may ask Nimble to load the page in a browser and serve the text the browser shows once the page has loaded: `provider_options={"render": True}` on WebRouter's extract. (a page whose served text is stale is read through it or a browser vendor) | T — test_s2_api.py | passing |
+| S2-WEB-2 | S2 Web access | Cost: extract through `nimble` that loads the page in a browser 3 per URL requested, including a URL for which no page is returned; open a session through `kernel` 0 / `browserbase` 2; each page served to a session 1; browse run 4. A failed open, a failed page load and releasing a session cost nothing. (spent_units = sum of the mock's logged costs) | T — test_s2_api.py | passing |
+| S2-WEB-3 | S2 Web access | A service may use Nimble's rendered extract alone to obtain every page's browser text; neither browser vendor is required. | T — test_s2_api.py | passing |
+| S2-WEB-4 | S2 Web access | Each provider keeps at most 4 sessions open at once; opening another is answered with an error. A session that no client has been connected to for 60 seconds is closed by the provider. (concurrent builds stay correct) | T+R — test_s2_api.py | passing (test); R part open: Reviewer inspection |
+| S2-WEB-5 | S2 Web access | WebRouter reads the keys from the environment. A service that uses these vendors passes their base URLs to WebRouter in `provider_config` (`KERNEL_*`, `BROWSERBASE_*` variables) | R | open: Reviewer inspection |
+| S2-CO-1 | S2 Web access/§9 | No build of a dossier spends more than 80 units (§9). (with the render surcharge and browser costs) | T — test_s2_api.py | passing |
+| S2-CO-2 | S2 Web access | These calls cost, in the units of §9 [...] (a build's spent_units equals the cost of every provider call the mock logged; exactly one successful domain-query search) | T — test_s2_api.py | passing |
+| S2-RL-1 | S2 Rate limits | From this stage a provider may answer any call with 429. (the build still ends `ready` with the right candidates) | T — test_s2_api.py | passing |
+| S2-RL-2 | S2 Rate limits | A call answered 429 costs nothing (`stage-1.md` §9). | T — test_s2_api.py | passing |
+| S2-RL-3 | S2 Rate limits | No call is answered 429 more than three times in a row [...] (a call that was answered 429 is made again, and succeeds) | T — test_s2_api.py | passing |
+| S2-RL-4 | S2 Rate limits | Time a build spends waiting to make a call again after a 429 does not count toward the 10 seconds of `stage-1.md` §8. | T(proxy) — test_s2_api.py | passing (proxy: time bound incl. waits) |
+| S2-RL-5 | S2 Rate limits/§5 | [API stays responsive and valid while a build waits on 429s] Requests must not produce 5xx responses | T — test_s2_api.py | passing |
+| S2-CA-1 | S2 Candidates | A **candidate** is one value for one field, supported by one excerpt of one page. Every value that a page of the evidence (§4) supports for a field is a candidate of that field, once for each such page. | T — test_s2_api.py | passing |
+| S2-CA-2 | S2 Candidates | `url`, `excerpt` and `provider` follow the citation rules in §4. A candidate's `provider` is a provider that served the text its excerpt is taken from. | T — test_s2_api.py | passing |
+| S2-CA-3 | S2 Candidates | [a (page, value) pair is a candidate once: two statements of one value on one page are one candidate; one value on several pages is several candidates] | T — test_s2_api.py | passing |
+| S2-CA-4 | S2 Candidates | A research claim whose citation does not support it is still not a candidate. | T — test_s2_api.py | passing |
+| S2-CA-5 | S2 Candidates | `candidates` lists the candidates of the last build that completed `ready`, in the order the selection rule ranks them, the selected one first. | T — test_s2_api.py | passing |
+| S2-CA-6 | S2 Candidates | `retrieved_at` is the time of the build that gathered the candidate (§8, Builds). | T — test_s2_api.py | passing |
+| S2-CA-7 | S2 Candidates | A field with no candidate has `"candidates": []` and is `unknown`. | T — test_s2_api.py | passing |
+| S2-CA-8 | S2 Candidates/§8 | A failed build leaves the fields as they were (candidates included). | T — test_s2_api.py | passing |
+| S2-CA-9 | S2 Candidates | While a later build runs, the candidates are those of the last build that completed `ready`; a completed build replaces them. | T — test_s2_api.py | passing |
+| S2-CA-10 | S2 Candidates | The evidence now also holds the page that each research claim of the evidence cites, whether or not the citation supports its claim: a build reads that page as it reads any other. | T — test_s2_api.py | passing |
+| S2-SEL-1 | S2 Selection | **Authority** of the page's kind: `own` and `filing` rank equal and highest, then `news`, then `aggregator`. | T — test_s2_api.py | passing |
+| S2-SEL-2 | S2 Selection | **Recency** within the same authority: the later `published_at` ranks higher. | T — test_s2_api.py | passing |
+| S2-SEL-3 | S2 Selection | A candidate without a publication time ranks below every candidate of the same authority that has one. | T — test_s2_api.py | passing |
+| S2-SEL-4 | S2 Selection | **URL**: when authority and publication time are equal, the candidate whose `url` is smaller, comparing the strings by Unicode code point, ranks higher. | T — test_s2_api.py | passing |
+| S2-SEL-5 | S2 Selection | **Value**: between two candidates with the same URL and provider, the one whose value is smaller ranks higher: integers compare as numbers, strings by Unicode code point after removing surrounding whitespace. | T — test_s2_api.py | passing |
+| S2-SEL-6 | S2 Selection | The highest-ranked candidate is the selected one. The field's `value` is the selected candidate's value, and its `citations` are the `url`, `excerpt` and `provider` of every candidate with that value, in rank order. | T — test_s2_api.py | passing |
+| S2-SEL-7 | S2 Candidates | Two values are the same value when they are equal as JSON values; strings are compared exactly, after removing surrounding whitespace. | T — test_s2_api.py | passing |
+| S2-SEL-8 | S2 Selection | A candidate of lower authority is selected only when no candidate of higher authority exists for that field. | T — test_s2_api.py | passing |
+| S2-SEL-9 | S2 Candidates | `selected` is true on exactly one candidate of a field that has candidates, the one the rule picks, and false on the others. | T — test_s2_api.py | passing |
+| S2-SEL-10 | S2 Selection | The rule runs over all of a field's candidates. | T — test_s2_api.py | passing |
+| S2-SEL-11 | S2 Selection | between two candidates with the same URL, they rank by provider in the order `nimble`, `tavily`, `kernel`, `browserbase`. (a page is one candidate per value whatever provider served it: not observable black-box; offline model check only) | M | passing (offline model only) |
+| S2-ST-1 | S2 Status | `known` \| The field has candidates, and they all have the same value | T — test_s2_api.py | passing |
+| S2-ST-2 | S2 Status | `contested` \| The field's candidates carry two or more different values [...] A `contested` field still has a selected `value` and its citations. | T — test_builds.py, test_s2_api.py | passing |
+| S2-ST-3 | S2 Status | `unknown` \| The field has no candidate; `value` is null | T — test_s2_api.py | passing |
+| S2-LS-1 | S2 Status | `GET /dossiers` (§8) is unchanged. The `legal_name` it lists is the selected value. | T — test_s2_api.py | passing |
+| S2-UI-1 | S2 Screens | The following screens must be reachable by URL: `/`, `/dossiers/{domain}`, `/dossiers/{domain}/evidence`, `/contested`, `/signup`, `/login`. Other screens must be reachable through the UI. | T — test_s2_api.py | passing |
+| S2-UI-2 | S2 Screens | The browser and the API share `/dossiers/{domain}`. Return the UI for `Accept: text/html`; API requests without that header receive JSON. | T — test_s2_api.py | passing |
+| S2-UI-3 | S2 Screens | `/`, `/dossiers/{domain}/evidence` and `/contested` are browser routes; they read the API's dossier data. (screens show what the API holds) | T — test_s2_api.py | passing |
+| S2-UI-4 | S2 Screens | The domain in a browser route is normalised as in §4. | T — test_s2_api.py | passing |
+| S2-AU-1 | S2 Signup and login | `signup-email`, `signup-password`, `signup-display-name` inputs; `signup-submit` button; `login-email`, `login-password`, `login-submit` (sign up and log in through the UI) | T — test_s2_ui.py | passing |
+| S2-AU-2 | S2 Signup and login | `auth-error` \| Error message. Present only when there is one | T — test_s2_ui.py | passing |
+| S2-AU-3 | S2 Signup and login | `current-user` \| Visible on every screen when signed in. Text contains the display name | T — test_s2_ui.py | passing |
+| S2-AU-4 | S2 Signup and login | `logout-button` \| Button | T — test_s2_ui.py | passing |
+| S2-LST-1 | S2 Dossier list | `dossier-list` \| Container. Children ordered by domain ascending | T — test_s2_ui.py | passing |
+| S2-LST-2 | S2 Dossier list | `dossier-item-{domain}` \| One per listed dossier. Carries `data-state="{state}"`. Text contains the domain, and the legal name when known. Links to `/dossiers/{domain}` | T — test_s2_ui.py | passing |
+| S2-LST-3 | S2 Dossier list | `dossier-search` \| Input. Filters the list as `q` does on `GET /dossiers`; `empty-dossiers` \| Shown instead of the list when no dossier matches | T — test_s2_ui.py | passing |
+| S2-LST-4 | S2 Dossier list | A research request that succeeds, with 202 or 200, opens `/dossiers/{domain}` for the normalised domain. `research-domain` input, `research-submit` button sends `POST /dossiers`. | T — test_s2_ui.py | passing |
+| S2-LST-5 | S2 Dossier list | `research-error` \| Error message, when the request is refused — including an invalid domain | T — test_s2_ui.py | passing |
+| S2-LST-6 | S2 Dossier list | A domain that already has a dossier, including one created by another client after this browser read the list, opens that dossier and starts no build. | T — test_s2_ui.py | passing |
+| S2-LST-7 | S2 Dossier list | `research-uncertain` \| Shown when the outcome of a research request is unknown | T — test_s2_ui.py | passing |
+| S2-RS-1 | S2 Refresh and competing clients | If a research or refresh response is lost, including after the request commits, show `research-uncertain` or `refresh-uncertain` (nonempty text), not `research-error` or `refresh-error`. | T — test_s2_ui.py | passing |
+| S2-RS-2 | S2 Refresh and competing clients | Keep the request retryable with the **same key and body**. | T — test_s2_ui.py | passing |
+| S2-RS-3 | S2 Refresh and competing clients | A successful retry removes both the error and the uncertainty elements, shows the dossier, and starts at most one build. Unknown outcomes are not confirmed refusals. | T — test_s2_ui.py | passing |
+| S2-DOS-1 | S2 Dossier | `dossier-domain` \| Text is exactly the normalised domain | T — test_s2_ui.py | passing |
+| S2-DOS-2 | S2 Dossier | `dossier-state` \| Text is exactly `building`, `ready` or `failed` | T — test_s2_ui.py | passing |
+| S2-DOS-3 | S2 Dossier | `dossier-spent` \| Formatted `spent_units`. Carries `data-units="{integer}"` | T — test_s2_ui.py | passing |
+| S2-DOS-4 | S2 Dossier | `field-{field}` \| One per field, six in all, in the order of the table in `stage-1.md` §4. Carries `data-status`; `field-value-{field}` \| The formatted value. Carries `data-value`. Present only when the value is not null; `field-contested-{field}` \| A marker. Present only when the field is `contested` | T — test_s2_ui.py | passing |
+| S2-DOS-5 | S2 Dossier | `field-citations-{field}` \| Container of the field's citations, in API order; `citation-{field}-{n}` \| The field's `n`th citation, counting from 1. Text contains the excerpt. Contains a link whose `href` is the citation's `url`. Carries `data-provider` | T — test_s2_ui.py | passing |
+| S2-DOS-6 | S2 Dossier | `dossier-researched-at` \| Text contains `researched_at`, formatted. Absent when it is null | T — test_s2_ui.py | passing |
+| S2-DOS-7 | S2 Dossier | `dossier-evidence-link` \| Link to `/dossiers/{domain}/evidence` | T — test_s2_ui.py | passing |
+| S2-DOS-8 | S2 Dossier | `dossier-not-found` \| Shown instead of the fields when no dossier exists for the domain | T — test_s2_ui.py | passing |
+| S2-DOS-9 | S2 Dossier | While the dossier's state is `building`, the screen reads the dossier again at least every 2 seconds until the state is `ready` or `failed`, and then shows the new fields without a manual reload. | T — test_s2_ui.py | passing |
+| S2-EV-1 | S2 Evidence | `evidence-{field}` \| One container per field, six in all. Children in API `candidates` order | T — test_s2_ui.py | passing |
+| S2-EV-2 | S2 Evidence | `candidate-{field}-{n}` \| The field's `n`th candidate, counting from 1. Carries `data-value`, `data-provider`, `data-kind`, `data-url`, `data-published-at` (the RFC 3339 `published_at`, empty when null) and `data-selected="true"` or `"false"` | T — test_s2_ui.py | passing |
+| S2-EV-3 | S2 Evidence | `candidate-{field}-{n}` Text contains the formatted value and the excerpt. | T — test_s2_ui.py | passing |
+| S2-EV-4 | S2 Evidence | `evidence-empty-{field}` \| Shown instead of candidates when the field has none | T — test_s2_ui.py | passing |
+| S2-EV-5 | S2 Screens | `/dossiers/{domain}/evidence`: the domain in the browser route is normalised; an unknown dossier is handled | T — test_s2_ui.py | passing |
+| S2-CT-1 | S2 Contested | `contested-item-{domain}-{field}` \| One per contested field of any dossier. Carries `data-value` for the selected value. Text contains the domain, the field and every distinct candidate value. Links to `/dossiers/{domain}/evidence` | T — test_s2_ui.py | passing |
+| S2-CT-2 | S2 Contested | `contested-list` \| Container. Children ordered by domain ascending, then by field in the order of the table in `stage-1.md` §4 | T — test_s2_ui.py | passing |
+| S2-CT-3 | S2 Contested | `empty-contested` \| Shown instead of the list when no field is contested | T — test_s2_ui.py | passing |
+| S2-RF-1 | S2 Dossier/Refresh | `dossier-refresh` \| Button. Sends `POST /dossiers/{domain}/refresh` (with an Idempotency-Key) | T — test_s2_ui.py | passing |
+| S2-RF-2 | S2 Dossier | `refresh-error` \| Error message, when a refresh is refused | T — test_s2_ui.py | passing |
+| S2-RF-3 | S2 Dossier | `refresh-uncertain` \| Shown when the outcome of a refresh is unknown | T — test_s2_ui.py | passing |
+| S2-RF-4 | S2 Refresh and competing clients | [retry of a lost refresh] same key and body | T — test_s2_ui.py | passing |
+| S2-RF-5 | S2 Refresh and competing clients | After any successful action, the data on the same page must show the new state without a manual reload. Navigation must wait for the write to succeed before it refreshes the data. | T — test_s2_ui.py | passing |
+| S2-RF-6 | S2 Refresh and competing clients | [a lost refresh response, retried: at most one build starts] | T — test_s2_ui.py | passing |
+| S2-RF-7 | S2 Refresh and competing clients | A refresh from this browser while that build runs is answered 202 like any other and the screen follows the running build to its end. | T — test_s2_ui.py | passing |
+| S2-RW-1 | S2 Refresh and competing clients | `dossier-reload` reads the dossier again. **Latest read wins:** a delayed earlier read must not overwrite a later one, including when responses arrive out of order. | T — test_s2_ui.py | passing |
+| S2-RW-2 | S2 Refresh and competing clients | This applies to the reads while a dossier is `building` as well. | T — test_s2_ui.py | passing |
+| S2-RW-3 | S2 Dossier | `dossier-reload` \| Button. Reads the dossier again without starting a build | T — test_s2_ui.py | passing |
+| S2-UP-1 | S2 Existing clients | A stage-2 service must accept an export produced by the same team's stage-1 service. | T — test_s2_upgrade.py | passing |
+| S2-UP-2 | S2 Existing clients | Imported dossiers appear in the list and on their screens. (ids, states, researched_at, spent_units preserved) | T — test_s2_upgrade.py | passing |
+| S2-UP-3 | S2 Existing clients | A browser signed in before that export/import upgrade must remain signed in afterwards. (tokens and password logins survive) | T — test_s2_upgrade.py | passing |
+| S2-UP-4 | S2 Existing clients | A research or refresh request whose response was lost before export remains retryable after import with the same body and key | T — test_s2_upgrade.py | passing |
+| S2-UP-5 | S2 Existing clients | Each imported field gains one candidate for every value that text the providers served to the dossier's last stage-1 build that completed `ready` supports for that field, once for each page whose served text supports it. | T — test_s2_upgrade.py | passing; ruled (RULINGS 55: only what the stage-1 export records) |
+| S2-UP-6 | S2 Existing clients | The candidate's excerpt is taken from that text and supports the value; its `provider` is the provider that served that text | T — test_s2_upgrade.py | passing; ruled (RULINGS 55: only what the stage-1 export records) |
+| S2-UP-7 | S2 Existing clients | its `kind` and `published_at` are as the exported state records them or else null, and its `retrieved_at` is the dossier's `researched_at`. | T — test_s2_upgrade.py | passing; ruled (RULINGS 55: only what the stage-1 export records) |
+| S2-UP-8 | S2 Existing clients | Each imported field's `value`, `status` and `citations` then follow from its candidates by the selection rule and Status, as after a build. | T — test_s2_upgrade.py | passing; ruled (RULINGS 55: only what the stage-1 export records) |
+| S2-UP-9 | S2 Existing clients/§10 | [a stage-1 dossier that never completed ready: `failed`, every field `unknown`, no candidates] | T — test_s2_upgrade.py | passing |
+| S2-UP-10 | S2 Existing clients | The candidates of an imported dossier are replaced by those of its next completed build. | T — test_s2_upgrade.py | passing |
+| S2-UP-11 | S2 Existing clients | A browser signed in before that export/import upgrade must remain signed in afterwards. [...] No page reload or new screen is required. | T — test_s2_ui.py | passing |
+| S2-UP-12 | S2 Existing clients | the UI must recover the original response and show the imported dossier. [...] These requirements apply when import completes between browser requests | T — test_s2_ui.py | passing |
+| S2-PQ-1 | S2 Product | The required flows must remain clear and usable at a 375 CSS-pixel viewport and at conventional desktop widths, without horizontal page scrolling. | T — test_s2_ui.py | passing |
+| S2-PQ-2 | S2 Product | Inputs need visible labels | T — test_s2_ui.py | passing |
+| S2-PQ-3 | S2 Product | keyboard focus must be apparent | T(heuristic) — test_s2_ui.py | passing (heuristic test) |
+| S2-PQ-4 | S2 Product | text and controls need sufficient contrast | T(heuristic) — test_s2_ui.py | passing (heuristic test) |
+| S2-PQ-5 | S2 Product | Known, unknown, contested, building, failed, loading, successful, refused and uncertain states must be visually distinct as well as satisfying the behavioural requirements below. | T+UX — test_s2_ui.py | passing (test, heuristic); UX part open: UX reviewer |
+| S2-PQ-6 | S2 Product | keep navigation consistent across the required routes. | T — test_s2_ui.py | passing |
+| S2-PQ-7 | S2 Product | Each citation shows its excerpt as quoted text and links to its URL. | T — test_s2_ui.py | passing |
+| S2-PQ-8 | S2 Product | Format names, years, headcount ranges, money and timestamps for people first; expose technical identifiers only where they help the user. | T(heuristic)+UX — test_s2_ui.py | passing (test, heuristic); UX part open: UX reviewer |
+| S2-PQ-9 | S2 Product | Provide considered empty, loading and error states | T+UX — test_s2_ui.py | passing (test, heuristic); UX part open: UX reviewer |
+| S2-PQ-10 | S2 Product | Primary actions — research, refresh — must be easy to identify. | T(heuristic)+UX — test_s2_ui.py | passing (test, heuristic); UX part open: UX reviewer |
+| S2-PQ-11 | S2 Product | [no script errors on the required screens] | T — test_s2_ui.py | passing |
+| S2-PQ-12 | S2 Product | A field's value and its status must be the clearest information on the dossier screen, with its citations directly beside it. [...] a coherent, presentation-ready research product, [...] a consistent visual system for typography, spacing, colour, controls and feedback. | UX | open: UX reviewer inspection |
+| S2-PQ-13 | S2 Product | a reader opening a dossier should see at a glance which fields are known, which are unknown and which are contested, and where each value came from. | UX | open: UX reviewer inspection |
+| AX-6 | — | [test infrastructure] selection rule / status / kind / published model agrees with the spec's rules | T — test_02_selection_selfcheck.py | passing |
+| AX-7 | — | [test infrastructure] stage-2 corpus expectations are exact (no fragment-only candidates) | T — test_02_selection_selfcheck.py | passing |

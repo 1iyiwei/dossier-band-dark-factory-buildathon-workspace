@@ -6,9 +6,10 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 STAGE_DIR="${STAGE_DIR:-$(cd "$HERE/../.." && pwd)}"
 KICKOFF_DIR="${KICKOFF_DIR:-/Users/lwei/Trees/band-dark-factory-buildathoan-workspace/sf-buildathon-2026}"
+S1_DIR="${S1_DIR:-$STAGE_DIR/../stage-1}"      # the team's final stage-1 service (upgrade tests); S1_DIR="" skips them
 TAG="an$$"
-NET="net-$TAG"; MOCKC="mock-$TAG"; SVC="svc-$TAG"; SVC2="svc2-$TAG"; SVC3="svc3-$TAG"
-cleanup() { docker rm -f "$MOCKC" "$SVC" "$SVC2" "$SVC3" >/dev/null 2>&1; docker network rm "$NET" >/dev/null 2>&1; }
+NET="net-$TAG"; MOCKC="mock-$TAG"; SVC="svc-$TAG"; SVC2="svc2-$TAG"; SVC3="svc3-$TAG"; SVCS1="svcs1-$TAG"
+cleanup() { docker rm -f "$MOCKC" "$SVC" "$SVC2" "$SVC3" "$SVCS1" >/dev/null 2>&1; docker network rm "$NET" >/dev/null 2>&1; }
 trap cleanup EXIT
 set -e
 docker build -q -t "dossier-web-$TAG" "$KICKOFF_DIR/challenges/dossier/web" >/dev/null
@@ -22,7 +23,9 @@ start_svc() {  # name, extra docker args
   local name="$1"; shift
   docker run -d --name "$name" --network "$NET" --cpus 2 --memory 3g \
     -e NIMBLE_API_KEY=local -e NIMBLE_BASE_URL=http://web:8080/nimble \
-    -e TAVILY_API_KEY=local -e TAVILY_BASE_URL=http://web:8080/tavily "$@" >/dev/null
+    -e TAVILY_API_KEY=local -e TAVILY_BASE_URL=http://web:8080/tavily \
+    -e KERNEL_API_KEY=local -e KERNEL_BASE_URL=http://web:8080/kernel \
+    -e BROWSERBASE_API_KEY=local -e BROWSERBASE_BASE_URL=http://web:8080/browserbase "$@" >/dev/null
 }
 wait_health() {  # port -> prints seconds to first healthy answer (DEP-3: <= 60)
   local t0=$(date +%s)
@@ -42,8 +45,15 @@ start_svc "$SVC2" -e PORT=8000 -p 127.0.0.1::8000 "dossier-svc-$TAG"
 P1=$(docker port "$SVC" 8000/tcp | head -1 | sed 's/.*://')
 P2=$(docker port "$SVC2" 8000/tcp | head -1 | sed 's/.*://')
 echo "DEP-3: healthy with -e PORT=8000 after $(wait_health "$P1")s"; wait_health "$P2" >/dev/null
+BASE_S1=""
+if [ -n "$S1_DIR" ] && [ -f "$S1_DIR/Dockerfile" ]; then
+  docker build -q -t "dossier-svc1-$TAG" "$S1_DIR" >/dev/null
+  start_svc "$SVCS1" -e PORT=8000 -p 127.0.0.1::8000 "dossier-svc1-$TAG"
+  PS1=$(docker port "$SVCS1" 8000/tcp | head -1 | sed 's/.*://')
+  wait_health "$PS1" >/dev/null && BASE_S1="http://127.0.0.1:$PS1"
+fi
 set +e
-BASE_URL="http://127.0.0.1:$P1" BASE_URL_2="http://127.0.0.1:$P2" MOCK_URL="http://127.0.0.1:$MOCK_PORT" \
+BASE_URL="http://127.0.0.1:$P1" BASE_URL_2="http://127.0.0.1:$P2" BASE_URL_S1="$BASE_S1" MOCK_URL="http://127.0.0.1:$MOCK_PORT" \
   "$HERE/run_against.sh" "$@"
 RC=$?
 echo "DEP-4 resource peek: $(docker stats --no-stream --format '{{.Name}} mem={{.MemUsage}} cpu={{.CPUPerc}}' "$SVC")"

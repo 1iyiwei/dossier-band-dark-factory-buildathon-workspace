@@ -133,7 +133,9 @@ def test_slow_providers_are_waited_for_and_post_returns_at_once(pworld):
     check_citations(b, calls)
     assert cost_of(calls) <= 80
     assert b["spent_units"] == cost_of(calls), "a call that timed out still costs its units"
-    assert b["state"] == "ready" and all(f["status"] == "known" for f in b["fields"].values())
+    assert b["state"] == "ready", b["state"]
+    assert all(f["status"] == "known" for f in b["fields"].values()), \
+        {n: (f["status"], f["value"]) for n, f in b["fields"].items()}
 
 
 def test_reset_during_a_build_leaves_the_new_state_untouched(pworld):

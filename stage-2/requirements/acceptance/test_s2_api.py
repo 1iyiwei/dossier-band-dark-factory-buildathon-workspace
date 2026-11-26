@@ -179,7 +179,7 @@ def test_kind_and_publication_time_come_from_the_header_with_defaults(s2):
 
 
 def test_candidates_are_the_last_ready_builds_and_retrieved_at_is_its_time(pworld):
-    """S2-CA-5 S2-CA-8 S2-CA-9 (failed refresh keeps candidates; a running refresh shows the last ready build; a completed refresh replaces them)"""
+    """S2-CA-5 S2-CA-6 S2-CA-8 S2-CA-9 (failed refresh keeps candidates; a running refresh shows the last ready build; a completed refresh replaces them)"""
     w = pworld
     d = "northwind-optics.test"
     b0, _ = w.build(w.ada, d)
@@ -212,9 +212,11 @@ def test_candidates_are_the_last_ready_builds_and_retrieved_at_is_its_time(pworl
                 == parse_ts(b1["researched_at"])
 
 
-def test_the_listed_legal_name_is_the_selected_value(s2):
+def test_the_listed_legal_name_is_the_selected_value(pworld):
     """S2-LS-1 (GET /dossiers lists the selected legal_name; a non-selected candidate does not match q)"""
-    w = s2.w
+    w = pworld
+    for d in (A, B, D):
+        w.build(w.ada, d)
     rows = {r["domain"]: r for r in ok_json(w.ada.get("/dossiers"))["dossiers"]}
     assert rows[A]["legal_name"] == "Ashgrove Labs, Inc." and rows[B]["legal_name"] == "Brightmoor Energy Ltd"
     assert rows[D]["legal_name"] is None
@@ -265,7 +267,7 @@ def test_candidates_come_from_the_text_a_browser_shows(s2):
 
 
 def test_a_research_claim_that_is_not_supported_still_gets_its_page_read(s2):
-    """S2-CA-4 S2-CA-10 S2-TX-4 (brightmoor funding: the claim ($7M, 'reportedly') is no candidate; its page's own $5M statement is)"""
+    """S2-CA-4 S2-CA-10 (brightmoor funding: the claim ($7M, 'reportedly') is no candidate; its page's own $5M statement is)"""
     f = s2.bodies[B]["fields"]["funding_total"]
     assert vals(f) == [5000000] and f["status"] == "known"
     assert f["candidates"][0]["url"] == "https://wirecast-daily.test/brightmoor-press"
@@ -325,7 +327,7 @@ def test_concurrent_builds_stay_correct_and_within_budget(pworld):
 # ------------------------------------------------------------------ rate limits
 @pytest.mark.parametrize("mode", ["throttle", "rate_limit"])
 def test_429_is_retried_costs_nothing_and_does_not_fail_the_build(pworld, mode):
-    """S2-RL-1 S2-RL-2 S2-RL-3 (nimble answers 429 to the first attempt of each call / to three attempts in a row; tavily is down)"""
+    """S2-RL-1 S2-RL-2 S2-RL-3 S2-RL-4 (nimble answers 429 to the first attempt of each call / to three attempts in a row; tavily is down)"""
     w = pworld
     d = "ashgrove-labs.test"
     w.mock.break_all(("tavily",))
@@ -349,7 +351,7 @@ def test_429_is_retried_costs_nothing_and_does_not_fail_the_build(pworld, mode):
 
 
 def test_reads_stay_fast_and_valid_while_a_build_waits_on_429s(pworld):
-    """S2-RL-4 CV-10 (reads during a build that waits on 429s stay fast and valid)"""
+    """S2-RL-5 CV-10 (reads during a build that waits on 429s stay fast and valid)"""
     w = pworld
     d = "driftwood-games.test"
     w.mock.fault("nimble", ["search", "extract", "research"], "rate_limit")
@@ -380,9 +382,10 @@ def test_browser_routes_answer_html_without_a_token(s2, path):
     assert "<" in r.text and len(r.text) > 100
 
 
-def test_the_dossier_route_serves_json_to_api_clients_and_html_to_browsers(s2):
+def test_the_dossier_route_serves_json_to_api_clients_and_html_to_browsers(pworld):
     """S2-UI-2 S2-UI-3 (same URL; JSON without Accept: text/html; an unknown dossier is 404 for both)"""
-    w = s2.w
+    w = pworld
+    w.build(w.ada, A)
     url = f"{BASE}/dossiers/{A}"
     auth = {"Authorization": f"Bearer {w.ada.token}"}
     for accept in (None, "application/json", "*/*"):
@@ -401,9 +404,10 @@ def test_the_dossier_route_serves_json_to_api_clients_and_html_to_browsers(s2):
     assert r.status_code == 401 and r.json()["error"]["code"] == "unauthenticated"
 
 
-def test_the_browser_route_normalises_its_domain(s2):
-    """S2-UI-4 (WWW. and case in the browser route reach the same dossier; JSON carries the normalised domain)"""
-    w = s2.w
+def test_the_browser_route_normalises_its_domain(pworld):
+    """S2-UI-4 (WWW. and case in the path reach the same dossier; JSON carries the normalised domain)"""
+    w = pworld
+    w.build(w.ada, A)
     r = httpx.get(f"{BASE}/dossiers/WWW.Ashgrove-Labs.TEST.", headers={"Authorization": f"Bearer {w.ada.token}"},
                   timeout=5)
     assert r.status_code == 200 and r.json()["domain"] == A
