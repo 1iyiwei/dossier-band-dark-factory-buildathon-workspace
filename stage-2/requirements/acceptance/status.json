@@ -101,7 +101,7 @@
  "BD-2": "passing",
  "BD-3": "passing",
  "BD-4": "passing",
- "BD-5": "failing: test_faults.py::test_slow_providers_are_waited_for_and_post_returns_at_once (ready but all fields unknown under 3 s provider delays; revision 6b5b566+)",
+ "BD-5": "passing (revision a70e5c6: full run 411 passed); R part (timeouts) open: Reviewer inspection",
  "BD-6": "passing",
  "BD-7": "passing",
  "SU-1": "passing",
