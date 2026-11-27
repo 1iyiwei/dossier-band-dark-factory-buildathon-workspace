@@ -4,15 +4,15 @@ Kinds: T acceptance test (`requirements/acceptance`), RUN run.sh measurement, R 
 
 | ID | § | Requirement (quoted) | Verification | Status |
 |---|---|---|---|---|
-| DEP-1 | §2 | Deliver an HTTP service, a `Dockerfile` and a `RUN.md` with a command that builds and starts the service without manual setup. | RUN+R | passing (test/run); R part open: Reviewer inspection |
+| DEP-1 | §2 | Deliver an HTTP service, a `Dockerfile` and a `RUN.md` with a command that builds and starts the service without manual setup. | RUN+R | passing; Reviewer PASS on 158fc8c (isolated harness final-s2-s2-reviewer-5) |
 | DEP-2 | §3.1 | Listen on `0.0.0.0` using the `PORT` environment variable, default `8080`. | RUN | passing (run.sh) |
 | DEP-3 | §3.2 | Return 200 once the service and its data store can serve requests, within 60 seconds of container start. | RUN | passing (run.sh) |
 | DEP-4 | §2 | CPU \| 2 vCPU; Memory \| 3 GiB; Concurrent requests \| up to 50 in flight (run.sh limits the container to 2 CPU / 3 GiB and runs the load tests) | RUN | passing (run.sh) |
-| DEP-5 | §2 | The image must run on its own with `-e PORT=<port>` and a port mapping. All runtime dependencies, initialization and seed data must work within that single container. | RUN+R | passing (test/run); R part open: Reviewer inspection |
-| DEP-6 | §2 | The stage folder's dependency manifest lists `webrouter>=0.12.0`. | R | open: Reviewer inspection |
-| DEP-7 | §2 | every request to a provider goes through `web_router`: called in-process, or from a Python helper process that the service runs inside its own container. [...] Calling a provider's API by any other route is not permitted. | R | open: Reviewer inspection |
+| DEP-5 | §2 | The image must run on its own with `-e PORT=<port>` and a port mapping. All runtime dependencies, initialization and seed data must work within that single container. | RUN+R | passing; Reviewer PASS on 158fc8c (isolated harness final-s2-s2-reviewer-5) |
+| DEP-6 | §2 | The stage folder's dependency manifest lists `webrouter>=0.12.0`. | R | passing; Reviewer PASS on 158fc8c (isolated harness final-s2-s2-reviewer-5) |
+| DEP-7 | §2 | every request to a provider goes through `web_router`: called in-process, or from a Python helper process that the service runs inside its own container. [...] Calling a provider's API by any other route is not permitted. | R | passing; Reviewer PASS on 158fc8c (isolated harness final-s2-s2-reviewer-5) |
 | DEP-8 | §2 | Tavily is optional: a service may use it beside Nimble, and its absence must not prevent research while Nimble answers. | T — test_faults.py | passing |
-| DEP-9 | §2 | at run time, **only the provider endpoints this specification lists** [...] Runtime assets and dependencies must be included in the image. | R | open: Reviewer inspection |
+| DEP-9 | §2 | at run time, **only the provider endpoints this specification lists** [...] Runtime assets and dependencies must be included in the image. | R | passing; Reviewer PASS on 158fc8c (isolated harness final-s2-s2-reviewer-5) |
 | H-1 | §3.2 | GET /health -> 200 {"status": "ok"} | T — test_auth.py | passing |
 | H-2 | §3.2 | `/health` makes no provider call. | T — test_api.py | passing |
 | R-1 | §3.3 | When reset returns 204, subsequent requests must see only that fixture: no users other than the seeded ones, no dossiers and no stored idempotent responses. | T — test_auth.py, test_faults.py | passing |
@@ -51,7 +51,7 @@ Kinds: T acceptance test (`requirements/acceptance`), RUN run.sh measurement, R 
 | AU-8 | §6 | Every other endpoint requires a bearer token, except `/health`, the `/_test/*` endpoints and the two above. | T — test_auth.py | passing |
 | AU-9 | §6 | A request to such an endpoint that lacks a valid token is 401 `unauthenticated`, even when it also lacks a required `Idempotency-Key`. | T — test_auth.py | passing |
 | AU-10 | §6 | Tokens do not expire. An account may have multiple valid tokens and concurrent sessions. | T — test_auth.py | passing |
-| AU-11 | §6 | Passwords must be stored using a password-hashing function such as bcrypt, scrypt or Argon2, or an equivalent. Plaintext password storage is not permitted. | T+R — test_state.py | passing (test/run); R part open: Reviewer inspection |
+| AU-11 | §6 | Passwords must be stored using a password-hashing function such as bcrypt, scrypt or Argon2, or an equivalent. Plaintext password storage is not permitted. | T+R — test_state.py | passing (test/run); Reviewer PASS on 158fc8c (isolated harness final-s2-s2-reviewer-5) |
 | AU-12 | §5 | 401 `unauthenticated`: Missing, malformed or unknown bearer token | T — test_auth.py | passing |
 | AU-13 | §6/§5 | A required field or query parameter is missing [...] 422; a field of the wrong JSON type 400 (signup/login bodies) | T — test_auth.py | passing |
 | AU-14 | §6/§11 | Email already registered \| 409 `email_taken` (under concurrent signups: results as one-at-a-time) | T — test_auth.py | passing |
@@ -106,7 +106,7 @@ Kinds: T acceptance test (`requirements/acceptance`), RUN run.sh measurement, R 
 | BD-2 | §8 | A build ends in `ready` when it completed, or `failed` when none of its provider calls succeeded. A failed build leaves the fields as they were. | T — test_faults.py | passing |
 | BD-3 | §8 | When a build completes `ready`, each field is `known` exactly when the evidence (§4) supports a value for it. | T — test_builds.py | passing |
 | BD-4 | §8 | A build whose provider calls each answer within one second ends within 10 seconds of the request that started it. | T — test_builds.py | passing |
-| BD-5 | §8 | Against the live providers [...] a build does not give up on a call that has been waiting less than 30 seconds, nor stop gathering because of the time it has run in its first 120 seconds. It still ends `ready` or `failed` within 300 seconds. | T(proxy)+R — test_faults.py | passing (full run on 158fc8c: 411 passed; first attempt on a70e5c6 stalled and was killed, see report); R part (timeouts) open: Reviewer inspection |
+| BD-5 | §8 | Against the live providers [...] a build does not give up on a call that has been waiting less than 30 seconds, nor stop gathering because of the time it has run in its first 120 seconds. It still ends `ready` or `failed` within 300 seconds. | T(proxy)+R — test_faults.py | passing (test/run); Reviewer PASS on 158fc8c (isolated harness final-s2-s2-reviewer-5) |
 | BD-6 | §8 | Reading a dossier, listing dossiers and every other request [...] make no provider call. (idempotent replays, validation failures, health) | T — test_api.py, test_idempotency.py | passing |
 | BD-7 | §1 | A dossier is built in the background, read any number of times, and refreshed on request. | T — test_api.py, test_faults.py | passing |
 | SU-1 | §1 | Every value the service asserts cites at least one excerpt that a provider endpoint served to this service, and that excerpt supports the value. No citation is invented, reworded, or attached to a value it does not support. | T — test_builds.py | passing |
@@ -139,12 +139,12 @@ Kinds: T acceptance test (`requirements/acceptance`), RUN run.sh measurement, R 
 | CO-3 | §4 | its other such searches use other queries. | T — test_builds.py | passing |
 | CO-4 | §8/§9 | Each provider call has a cost in units [table]; `spent_units` is the total cost of every provider call made for this dossier | T — test_builds.py, test_concurrency.py, test_faults.py | passing |
 | CO-5 | §9 | A call that a provider refuses with an error status costs nothing. | T — test_faults.py | passing |
-| CO-6 | §9 | A call whose answer does not arrive, because it times out or its connection fails, costs its units as in the table, whether or not the provider received it. | T(proxy)+R — test_faults.py | passing (test/run); R part open: Reviewer inspection |
+| CO-6 | §9 | A call whose answer does not arrive, because it times out or its connection fails, costs its units as in the table, whether or not the provider received it. | T(proxy)+R — test_faults.py | passing (test/run); Reviewer PASS on 158fc8c (isolated harness final-s2-s2-reviewer-5) |
 | CO-7 | §9 | A research request names the company by its domain in its query, and names the fields it asks for by the field names in §4, as the property names of its output schema. | T — test_builds.py | passing |
 | CO-8 | §9 | An extract through `nimble` does not set `render`. | T — test_builds.py | superseded by S2-WEB-1 (RULINGS 46); nimble extract 1 or 3 per URL |
-| CO-9 | §9 | A build stops making provider calls before its spending would exceed 80 units, and completes with the pages and research claims it has obtained. | T+R — test_builds.py | passing (test/run); R part open: Reviewer inspection |
+| CO-9 | §9 | A build stops making provider calls before its spending would exceed 80 units, and completes with the pages and research claims it has obtained. | T+R — test_builds.py | passing (test/run); Reviewer PASS on 158fc8c (isolated harness final-s2-s2-reviewer-5) |
 | CO-10 | §4 | A search that a provider answers with an error does not count. | T — test_faults.py | passing |
-| CO-11 | §9 | Cost table: nimble search 1/5/15, tavily 8/16/16, extract 1/2 per URL, research 25; a search returns at most 10 results (service accounting must match what the mock charges) | T+R — test_builds.py | passing (test/run); R part open: Reviewer inspection |
+| CO-11 | §9 | Cost table: nimble search 1/5/15, tavily 8/16/16, extract 1/2 per URL, research 25; a search returns at most 10 results (service accounting must match what the mock charges) | T+R — test_builds.py | passing (test/run); Reviewer PASS on 158fc8c (isolated harness final-s2-s2-reviewer-5) |
 | CO-12 | §9 | [quality] results per unit: fields known per unit spent (reported by the test run; Reviewer reads it) | M | passing (reported; Reviewer reads) |
 | PV-2 | §4 | every claim that a `nimble` research run for the company asking for all six fields answers with (research-only facts are found) | T — test_faults.py | passing |
 | PV-3 | §8 | `failed` when none of its provider calls succeeded (all providers erroring -> failed, spent 0) | T — test_faults.py | passing |
@@ -184,8 +184,8 @@ Kinds: T acceptance test (`requirements/acceptance`), RUN run.sh measurement, R 
 | S2-WEB-1 | S2 Web access | an extract through `nimble` may ask Nimble to load the page in a browser and serve the text the browser shows once the page has loaded: `provider_options={"render": True}` on WebRouter's extract. (a page whose served text is stale is read through it or a browser vendor) | T — test_s2_api.py | passing |
 | S2-WEB-2 | S2 Web access | Cost: extract through `nimble` that loads the page in a browser 3 per URL requested, including a URL for which no page is returned; open a session through `kernel` 0 / `browserbase` 2; each page served to a session 1; browse run 4. A failed open, a failed page load and releasing a session cost nothing. (spent_units = sum of the mock's logged costs) | T — test_s2_api.py | passing |
 | S2-WEB-3 | S2 Web access | A service may use Nimble's rendered extract alone to obtain every page's browser text; neither browser vendor is required. | T — test_s2_api.py | passing |
-| S2-WEB-4 | S2 Web access | Each provider keeps at most 4 sessions open at once; opening another is answered with an error. A session that no client has been connected to for 60 seconds is closed by the provider. (concurrent builds stay correct) | T+R — test_s2_api.py | passing (test); R part open: Reviewer inspection |
-| S2-WEB-5 | S2 Web access | WebRouter reads the keys from the environment. A service that uses these vendors passes their base URLs to WebRouter in `provider_config` (`KERNEL_*`, `BROWSERBASE_*` variables) | R | open: Reviewer inspection |
+| S2-WEB-4 | S2 Web access | Each provider keeps at most 4 sessions open at once; opening another is answered with an error. A session that no client has been connected to for 60 seconds is closed by the provider. (concurrent builds stay correct) | T+R — test_s2_api.py | passing (test); R part: Reviewer PASS on 158fc8c, vacuous (no browser sessions used) |
+| S2-WEB-5 | S2 Web access | WebRouter reads the keys from the environment. A service that uses these vendors passes their base URLs to WebRouter in `provider_config` (`KERNEL_*`, `BROWSERBASE_*` variables) | R | passing; Reviewer PASS on 158fc8c (nimble-only provider_config, correct since kernel/browserbase unused) |
 | S2-CO-1 | S2 Web access/§9 | No build of a dossier spends more than 80 units (§9). (with the render surcharge and browser costs) | T — test_s2_api.py | passing |
 | S2-CO-2 | S2 Web access | These calls cost, in the units of §9 [...] (a build's spent_units equals the cost of every provider call the mock logged; exactly one successful domain-query search) | T — test_s2_api.py | passing |
 | S2-RL-1 | S2 Rate limits | From this stage a provider may answer any call with 429. (the build still ends `ready` with the right candidates) | T — test_s2_api.py | passing |
@@ -279,14 +279,14 @@ Kinds: T acceptance test (`requirements/acceptance`), RUN run.sh measurement, R 
 | S2-PQ-2 | S2 Product | Inputs need visible labels | T — test_s2_ui.py | passing |
 | S2-PQ-3 | S2 Product | keyboard focus must be apparent | T(heuristic) — test_s2_ui.py | passing (heuristic test) |
 | S2-PQ-4 | S2 Product | text and controls need sufficient contrast | T(heuristic) — test_s2_ui.py | passing (heuristic test) |
-| S2-PQ-5 | S2 Product | Known, unknown, contested, building, failed, loading, successful, refused and uncertain states must be visually distinct as well as satisfying the behavioural requirements below. | T+UX — test_s2_ui.py | passing (test, heuristic); UX part open: UX reviewer |
+| S2-PQ-5 | S2 Product | Known, unknown, contested, building, failed, loading, successful, refused and uncertain states must be visually distinct as well as satisfying the behavioural requirements below. | T+UX — test_s2_ui.py | passing (test, heuristic); UX Reviewer PASS on 158fc8c |
 | S2-PQ-6 | S2 Product | keep navigation consistent across the required routes. | T — test_s2_ui.py | passing |
 | S2-PQ-7 | S2 Product | Each citation shows its excerpt as quoted text and links to its URL. | T — test_s2_ui.py | passing |
-| S2-PQ-8 | S2 Product | Format names, years, headcount ranges, money and timestamps for people first; expose technical identifiers only where they help the user. | T(heuristic)+UX — test_s2_ui.py | passing (test, heuristic); UX part open: UX reviewer |
-| S2-PQ-9 | S2 Product | Provide considered empty, loading and error states | T+UX — test_s2_ui.py | passing (test, heuristic); UX part open: UX reviewer |
-| S2-PQ-10 | S2 Product | Primary actions — research, refresh — must be easy to identify. | T(heuristic)+UX — test_s2_ui.py | passing (test, heuristic); UX part open: UX reviewer |
+| S2-PQ-8 | S2 Product | Format names, years, headcount ranges, money and timestamps for people first; expose technical identifiers only where they help the user. | T(heuristic)+UX — test_s2_ui.py | passing (test, heuristic); UX Reviewer PASS on 158fc8c |
+| S2-PQ-9 | S2 Product | Provide considered empty, loading and error states | T+UX — test_s2_ui.py | passing (test, heuristic); UX Reviewer PASS on 158fc8c |
+| S2-PQ-10 | S2 Product | Primary actions — research, refresh — must be easy to identify. | T(heuristic)+UX — test_s2_ui.py | passing (test, heuristic); UX Reviewer PASS on 158fc8c |
 | S2-PQ-11 | S2 Product | [no script errors on the required screens] | T — test_s2_ui.py | passing |
-| S2-PQ-12 | S2 Product | A field's value and its status must be the clearest information on the dossier screen, with its citations directly beside it. [...] a coherent, presentation-ready research product, [...] a consistent visual system for typography, spacing, colour, controls and feedback. | UX | open: UX reviewer inspection |
-| S2-PQ-13 | S2 Product | a reader opening a dossier should see at a glance which fields are known, which are unknown and which are contested, and where each value came from. | UX | open: UX reviewer inspection |
+| S2-PQ-12 | S2 Product | A field's value and its status must be the clearest information on the dossier screen, with its citations directly beside it. [...] a coherent, presentation-ready research product, [...] a consistent visual system for typography, spacing, colour, controls and feedback. | UX | passing; UX Reviewer PASS on 158fc8c (non-blocking polish: refresh-refused banner wording) |
+| S2-PQ-13 | S2 Product | a reader opening a dossier should see at a glance which fields are known, which are unknown and which are contested, and where each value came from. | UX | passing; UX Reviewer PASS on 158fc8c (non-blocking polish: refresh-refused banner wording) |
 | AX-6 | — | [test infrastructure] selection rule / status / kind / published model agrees with the spec's rules | T — test_02_selection_selfcheck.py | passing |
 | AX-7 | — | [test infrastructure] stage-2 corpus expectations are exact (no fragment-only candidates) | T — test_02_selection_selfcheck.py | passing |
