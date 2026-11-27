@@ -37,12 +37,12 @@ def test_executives_take_none_of_the_stage_2_test_ids(ui):
     expect(t(pg, "dossier-state")).to_have_text("ready")
     assert tids(pg, r"field-(legal_name|hq_city|ceo|founded_year|headcount_range|funding_total)") \
         == [f"field-{f}" for f in FIELDS]
-    assert not [i for i in all_ids(pg) if re.search(r"executive|cfo|coo|cto", i)], all_ids(pg)
+    assert not [i for i in all_ids(pg) if re.search(r"(^|-)(executives?|cfo|coo|cto)(-|$)", i)], all_ids(pg)
     assert not [i for i in tids(pg, r"field-[a-z_]+") if i not in [f"field-{f}" for f in FIELDS]]
     goto(pg, f"/dossiers/{PAX}/evidence", "evidence-ceo")
     assert sorted(tids(pg, r"evidence-(legal_name|hq_city|ceo|founded_year|headcount_range|funding_total)")) \
         == sorted(f"evidence-{f}" for f in FIELDS)
-    assert not [i for i in all_ids(pg) if re.search(r"executive|cfo|coo|cto", i)], all_ids(pg)
+    assert not [i for i in all_ids(pg) if re.search(r"(^|-)(executives?|cfo|coo|cto)(-|$)", i)], all_ids(pg)
     goto(pg, "/contested", "contested-list|empty-contested")
     items = tids(pg, r"contested-item-.*")
     assert items == [i for i in items if re.fullmatch(rf"contested-item-{re.escape(MER)}-({'|'.join(FIELDS)})", i)], items

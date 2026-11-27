@@ -285,3 +285,16 @@ these readings; a rule marked **T** is asserted, **L** means tests are deliberat
     field and the two times change an exact shape (`UNKNOWN` field shape, "all fields known" restricted to the six fields). The
     carried tests ignore `executives` except where a corpus company has executive sentences (checked tolerantly in `check_exec_candidates`).
 
+75. **What the team's final stage-2 export can carry (T, ruled by evidence of the export itself).** The final stage-2 service's
+    `GET /_test/export` holds, per dossier, only `dossier_id`, `domain`, `state`, `fields` (with candidates), `researched_at` and
+    `spent_units`: no list of builds, no build times, outcomes or spending, no page texts or `Effective` lines (store.py `export_state`, read
+    only to settle this dispute). "State imported from a stage-2 export keeps the builds that the stage-2 service made, each with its time,
+    its outcome and its spending" therefore cannot be met for builds the export never recorded: an import of it is one ready build at the
+    dossier's `researched_at` (the sentence the spec gives for state a stage-2 service had itself imported), with `spent_units` the
+    dossier's total. The tests demand exactly that (as_of at and after `researched_at` returns the dossier, an earlier as_of is 404;
+    candidates `learned_at` = `retrieved_at`; `true_from` the Effective date or the date of Published) and no earlier imported build. If a
+    hidden check imports an export that does record builds, only a stage-2 service that exports them can satisfy it; the stage-3
+    service cannot invent them. Reported to the Coordinator as an upstream limitation, not a stage-3 defect.
+76. **Fresh-instance clock (CK-8) after a long idle (T).** `test_00_fresh_clock` compares the service's clock with the test host's.
+    It failed once with a 1008 s drift after the Docker VM's clock had stalled (host and a probe container agreed again minutes later; a
+    probe of the service after 75 s idle matched the host to the second). The test is kept; a failure is re-run before it is called a defect.

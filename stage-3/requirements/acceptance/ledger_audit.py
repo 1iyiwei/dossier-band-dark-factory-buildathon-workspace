@@ -13,7 +13,7 @@ rows = ledger_data.ROWS
 known = {r[0] for r in rows}
 untested = [r[0] for r in rows if r[3].startswith("T") and r[0] not in ids]
 stray = sorted(set(ids) - known - {"A4", "A1", "A2", "A3", "A5", "S2-", "S3-"})
-out = ["# LEDGER (stage 3: stage-1 and stage-2 rows carried forward, then S3-* rows)", "", "Kinds: T acceptance test (`requirements/acceptance`), RUN run.sh measurement, "
+out = ["# LEDGER (stage 3: stage-1 and stage-2 rows carried forward, then S3-* rows)", "", "Evidence: `ledger_status.py` over the JUnit file of `./run.sh --junitxml=...` (518 tests, 0 failed, 0 skipped, 407 s) against service revision 2371536. Kinds: T acceptance test (`requirements/acceptance`), RUN run.sh measurement, "
        "R review inspection, M measurement. Status: open / passing / failing / ruled.", "",
        "| ID | § | Requirement (quoted) | Verification | Status |", "|---|---|---|---|---|"]
 for i, sec, quote, kind in rows:

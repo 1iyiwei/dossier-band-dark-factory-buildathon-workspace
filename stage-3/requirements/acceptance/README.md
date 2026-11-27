@@ -50,6 +50,7 @@ Against processes you already run:
 | `test_s3_ui.py` | executives take none of the stage-2 test ids; `/contested` counts the six fields only |
 | `s3model.py`, `s3util.py` | stage-3 model (true_from, versions, history reducer) and shared timeline drivers |
 | `test_03_model_selfcheck.py` | stage-3 model self-checks and corpus design (no service) |
+| `ledger_status.py` | per-ID evidence from a JUnit file: `python3 ledger_status.py junit.xml REV run.log > status.json` |
 | `ledger_data.py`, `ledger_audit.py`, `status.json` | source of `../LEDGER.md` (`python3 ledger_audit.py status.json`) |
 
 Stage-2 companies (gen_corpus.py): `ashgrove-labs.test` (each step of the selection rule),

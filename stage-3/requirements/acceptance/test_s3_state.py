@@ -84,7 +84,7 @@ def test_a_stage_3_export_survives_import_unchanged_on_another_instance(tl):
         assert (as_of(dst, M, T[k]).status_code, as_of(dst, M, T[k]).json()) == before[M][("asof", k)]
     h = history_of(dst, M)["fields"]["ceo"]
     assert [e["value"] for e in h[:5]] == [e["value"] for e in before[M]["hist"]["fields"]["ceo"]]
-    assert h[-1]["learned_at"].startswith("2026-08-01") or dt(h[-1]["learned_at"]) == dt("2026-08-01T09:00:00+00:00")
+    assert all(dt(e["learned_at"]) == dt("2026-08-01T09:00:00+00:00") for e in feed1[len(feed0):])
 
 
 def test_import_replaces_history_and_feed_on_the_same_instance(tl):

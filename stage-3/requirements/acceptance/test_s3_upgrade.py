@@ -229,47 +229,39 @@ def test_a_stage_2_export_is_accepted_and_keeps_tokens(s2):
     assert changes_all(s2.ada) == []
 
 
-def test_stage_2_builds_are_kept_with_their_times_and_spending(s2):
-    """S3-UP-16 S3-UP-17 S3-UP-18 (as_of at each imported build time returns what the stage-2 service had; spent_units
-    the total of the builds up to then, the failed build included; before the first build 404)"""
+def test_stage_2_import_keeps_the_dossier_as_a_ready_build_at_researched_at(s2):
+    """S3-UP-16 S3-UP-17 S3-UP-18 (as_of at and after the dossier's researched_at returns what the stage-2 service had; spent_units
+    is the dossier's total, the failed build's spending included. The team's final stage-2 export records only the current
+    dossier, not each build (RULINGS 75): earlier builds are not demanded)"""
     a, b, c = (s2.snaps[k] for k in "abc")
-    for ts, want, spent in ((T0, a, a["spent_units"]), (T1, b, b["spent_units"]), (T2, b, c["spent_units"]),
-                            ("2026-03-05T00:00:00+00:00", a, a["spent_units"])):
+    for ts in (T1, T2, "2030-01-01T00:00:00+00:00"):
         got = ok_json(as_of(s2.ada, KY, ts))
-        assert got["state"] == "ready" and dt(got["researched_at"]) == dt(want["researched_at"]), ts
-        assert got["spent_units"] == spent, (ts, got["spent_units"], spent)
+        assert got["state"] == "ready" and dt(got["researched_at"]) == dt(b["researched_at"]), ts
+        assert got["spent_units"] == c["spent_units"], (ts, got["spent_units"], c["spent_units"])
         for name in FIELDS:
-            g, w = got["fields"][name], want["fields"][name]
+            g, w = got["fields"][name], b["fields"][name]
             assert (g["value"], g["status"], g["citations"]) == (w["value"], w["status"], w["citations"]), (ts, name)
-            key = lambda c: (c["url"], c["value"], c["excerpt"], c["provider"], c["kind"], c["published_at"],
-                             c["retrieved_at"], c["selected"])
-            assert [key(c) for c in g["candidates"]] == [key(c) for c in w["candidates"]], (ts, name)
+            key = lambda x: (x["url"], x["value"], x["excerpt"], x["provider"], x["kind"], x["published_at"],
+                             x["retrieved_at"], x["selected"])
+            assert [key(x) for x in g["candidates"]] == [key(x) for x in w["candidates"]], (ts, name)
         assert got["fields"]["executives"] == UNKNOWN, "an export of a stage-2 service has no executives"
     err(as_of(s2.ada, KY, "2026-02-28T23:59:59+00:00"), 404, "not_found")
 
 
 def test_stage_2_candidates_get_learned_at_and_true_from_as_if_this_service_made_the_builds(s2):
-    """S3-UP-19 S3-UP-20 S3-UP-21 (a candidate's learned_at is the time of the first build that gathered the same field,
-    value, URL and provider; its true_from follows from the page's Effective and Published lines)"""
-    first_seen = {}
-    for k, ts in (("a", T0), ("b", T1)):
-        for name in FIELDS:
-            for c in s2.snaps[k]["fields"][name]["candidates"]:
-                first_seen.setdefault((name, c["value"], c["url"], c["provider"]), dt(ts))
-    for k, ts, epoch in (("a", T0, 0), ("b", T1, 1)):
-        got = ok_json(as_of(s2.ada, KY, ts))
-        for name in FIELDS:
-            for c in got["fields"][name]["candidates"]:
-                ident = (name, c["value"], c["url"], c["provider"])
-                assert dt(c["learned_at"]) == first_seen[ident], (k, ident, c["learned_at"])
-                assert c["true_from"] in allowed_true_from(c["url"], epoch) or \
-                    (c["true_from"] is None and UTC_PUB[c["url"].rsplit("/", 1)[1]][epoch] is None), (k, name, c)
-        assert any(c["learned_at"] for f in got["fields"].values() for c in f["candidates"])
-    # the candidate that appeared in build b (Rotterdam) was learned then
-    hq = ok_json(as_of(s2.ada, KY, T1))["fields"]["hq_city"]["candidates"][0]
+    """S3-UP-19 S3-UP-20 S3-UP-21 (imported candidates: learned_at = retrieved_at = the build's time; true_from follows from the
+    page's Effective and Published lines: the Effective date or the date of Published, null when neither is recorded)"""
+    got = ok_json(as_of(s2.ada, KY, T1))
+    n = 0
+    for name in FIELDS:
+        for c in got["fields"][name]["candidates"]:
+            n += 1
+            assert dt(c["learned_at"]) == dt(c["retrieved_at"]) == dt(T1), (name, c)
+            assert c["true_from"] in allowed_true_from(c["url"], 1) or \
+                (c["true_from"] is None and UTC_PUB[c["url"].rsplit("/", 1)[1]][1] is None), (name, c)
+    assert n >= 6
+    hq = got["fields"]["hq_city"]["candidates"][0]
     assert hq["value"] == "Rotterdam" and dt(hq["learned_at"]) == dt(T1)
-    ceo = ok_json(as_of(s2.ada, KY, T1))["fields"]["ceo"]["candidates"][0]
-    assert dt(ceo["learned_at"]) == dt(T0), "the same CEO candidate was gathered by the first build"
 
 
 def test_stage_2_history_is_one_initial_entry_per_field_with_a_value(s2):
@@ -293,16 +285,19 @@ def test_stage_2_history_is_one_initial_entry_per_field_with_a_value(s2):
                     and got[name]["true_from"] == h[name][0]["true_from"]), name
 
 
-def test_stage_2_builds_give_values_by_page_versions(s2):
-    """S3-UP-23 (values at as_of of an imported build: the versions of the imported builds, as if this service made them;
-    the headquarters moved between the builds)"""
-    v = lambda ta, ts: ok_json(values(s2.ada, KY, ta, ts))["fields"]
-    assert v("2026-01-25", T1)["hq_city"]["value"] == "Gdansk"          # the first about page, until the second's date
-    assert v("2026-02-15", T1)["hq_city"]["value"] == "Rotterdam"
-    assert v("2026-02-15", T0)["hq_city"]["value"] == "Gdansk"          # the second build is not known at T0
-    assert v("2026-01-10", T1)["hq_city"]["value"] is None             # nothing holds before 2026-01-15
-    assert v("2026-01-25", T1)["ceo"]["value"] == "Ulla Berg" and v("2026-01-10", T1)["ceo"]["value"] is None
-    assert v("2026-01-25", T1)["executives"]["value"] is None
+def test_stage_2_import_gives_values_by_its_one_version_per_url(s2):
+    """S3-UP-23 (values at as_of = researched_at: each imported candidate's URL is one version holding from its true_from;
+    nothing holds before it; executives unknown)"""
+    cur = ok_json(as_of(s2.ada, KY, T1))["fields"]
+    for ta in ("2026-01-10", "2026-01-25", "2026-02-15", "2099-01-01"):
+        v = ok_json(values(s2.ada, KY, ta, T1))["fields"]
+        for name in FIELDS:
+            holding = [c for c in cur[name]["candidates"] if c["true_from"] is not None and c["true_from"] <= ta]
+            want = m.derive(holding)
+            assert v[name]["value"] == want["value"], (ta, name, v[name]["value"], want["value"])
+            assert v[name]["true_from"] == (want["order"][0]["true_from"] if want["order"] else None)
+        assert v["executives"]["value"] is None
+    assert ok_json(values(s2.ada, KY, "2099-01-01", T1))["fields"]["hq_city"]["value"] in ("Rotterdam", None)
     err(values(s2.ada, KY, "2026-01-25", "2026-02-28T23:59:59+00:00"), 404, "not_found")
 
 
