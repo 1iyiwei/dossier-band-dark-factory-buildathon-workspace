@@ -101,7 +101,7 @@
  "BD-2": "passing",
  "BD-3": "passing",
  "BD-4": "passing",
- "BD-5": "passing (revision a70e5c6: full run 411 passed); R part (timeouts) open: Reviewer inspection",
+ "BD-5": "passing (full run on 158fc8c: 411 passed; first attempt on a70e5c6 stalled and was killed, see report); R part (timeouts) open: Reviewer inspection",
  "BD-6": "passing",
  "BD-7": "passing",
  "SU-1": "passing",
