@@ -17,6 +17,7 @@
   const USER_KEY = "dossier.user";
   const REQUEST_TIMEOUT_MS = 8000;
   const POLL_MS = 1000;
+  const FAILED_TEXT = "Not researched: the build failed";
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   // ------------------------------------------------------------------ session
@@ -385,7 +386,7 @@
     return h("div", { class: "crumbs" }, h("a", { href }, "← " + label));
   }
 
-  function fieldCard(name, field, evidencePath, waiting) {
+  function fieldCard(name, field, evidencePath, notResearched) {
     const candidates = field.candidates || [];
     const values = distinctValues(candidates);
     const status = field.status;
@@ -407,14 +408,21 @@
       h("div", { class: "field-main" },
         hasValue
           ? h("p", { class: "field-value", testid: "field-value-" + name, "data-value": dataValue(field.value) }, formatValue(name, field.value))
-          : h("p", { class: "field-none" }, waiting ? "Waiting for the first build" : "No source supports a value"),
+          : h("p", { class: "field-none" }, notResearched || "No source supports a value"),
         status === "contested"
           ? h("p", { class: "field-note" }, "Sources disagree. Showing the value from the most authoritative, most recent source. ",
               h("a", { href: evidencePath + "#field-" + name }, "Compare all candidates"))
           : null,
         name === "headcount_range" && hasValue ? h("p", { class: "hint" }, "The range that contains the headcount the sources state.") : null,
-        status === "unknown" && !waiting ? h("p", { class: "hint" }, "No page read in the last build states this.") : null),
+        status === "unknown" && !notResearched ? h("p", { class: "hint" }, "No page read in the last build states this.") : null,
+        status === "unknown" && notResearched === FAILED_TEXT ? h("p", { class: "hint" }, "Refresh to try again.") : null),
       h("div", { class: "citations", testid: "field-citations-" + name }, citations));
+  }
+
+  function notResearchedText(data) {
+    if (data.researched_at) return null;
+    if (data.state === "building") return "Waiting for the first build";
+    return data.state === "failed" ? FAILED_TEXT : null;
   }
 
   function dossierPage(rawDomain) {
@@ -479,7 +487,7 @@
         banner.append(h("div", { class: "banner failed", role: "alert" },
           h("span", {}, data.researched_at ? "The latest build failed. Showing the fields of the last successful build." : "The build failed, so nothing is known yet. Try a refresh.")));
       }
-      fieldsRegion.replaceChildren(...FIELDS.map(([name]) => fieldCard(name, data.fields[name], path + "/evidence", data.state === "building" && !data.researched_at)));
+      fieldsRegion.replaceChildren(...FIELDS.map(([name]) => fieldCard(name, data.fields[name], path + "/evidence", notResearchedText(data))));
     };
 
     const syncPolling = (building) => {
