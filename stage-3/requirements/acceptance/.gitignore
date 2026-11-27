@@ -1,0 +1,4 @@
+.venv/
+__pycache__/
+last-service-log.txt
+.pytest_cache/

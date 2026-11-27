@@ -1,0 +1,27 @@
+{
+ "domain": "harbor-signal.test",
+ "names": [
+  "Harbor Signal"
+ ],
+ "pages": [
+  {
+   "url": "https://harbor-signal.test/about",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "about - harbor-signal.test",
+   "text": "Harbor Signal, Inc. was founded in 2012. It employs 60 people.\nHarbor Signal is based in Oslo, Norway, and builds buoys.\nHarbor Signal's CEO is Priya\nNair.\nHarbor Signal raised $2M in seed and $5M in Series A.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "harbor-signal.test"
+   }
+  }
+ ],
+ "research": {}
+}
