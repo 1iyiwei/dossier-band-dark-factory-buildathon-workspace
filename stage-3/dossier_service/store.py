@@ -1,8 +1,10 @@
-"""All service state behind one lock: users, tokens, dossiers, builds, idempotency, export/import.
+"""All service state behind one lock: users, tokens, dossiers, the change feed, idempotency, export/import.
 
 Every request takes the lock briefly; builds do their provider calls outside it and only
 touch state through ``_add_spent`` and ``_finish_build``, which ignore a build whose state
-was replaced (reset or import) or superseded.
+was replaced (reset or import) or superseded. Every change is written to the journal
+(``persistence.py``) before the lock is released, so no request is answered with state a
+restart would lose.
 """
 from __future__ import annotations
 
@@ -10,53 +12,26 @@ import copy
 import logging
 import secrets
 import threading
+from bisect import bisect_right
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 
 from .builder import BuildResult
-from .clock import Clock, parse_timestamp, try_parse_timestamp
-from .domains import is_valid_domain
+from .clock import Clock, parse_timestamp
+from .codec import export_dossier, is_int, parse_dossier, parse_feed_entry, upgrade_dossier
+from .dossier import Build, Dossier, iso
 from .errors import ApiError, malformed, validation_failed
 from .passwords import hash_password, verify_password
-from .selection import KINDS, Candidate, candidate_of, field_of
-from .support import FIELDS, supported_value
+from .persistence import COMPACT_BYTES, Journal
+from .support import ALL_FIELDS
 
 log = logging.getLogger("dossier.store")
 
 BuildFn = Callable[[str, Callable[[int], None], Callable[[], bool]], BuildResult]
 
-HEADCOUNT_VALUES = ("1-10", "11-50", "51-200", "201-500", "501-1000", "1001-5000", "5001-10000", "10001+")
-UNKNOWN_FIELD = {"value": None, "status": "unknown", "citations": [], "candidates": []}
 EXPORT_TRACK = "dossier"
 EXPORT_VERSION = 1
-
-
-def unknown_fields() -> dict[str, dict]:
-    return {name: copy.deepcopy(UNKNOWN_FIELD) for name in FIELDS}
-
-
-@dataclass
-class Build:
-    """One running build of one dossier."""
-    epoch: int
-    time: datetime
-
-
-@dataclass
-class Dossier:
-    dossier_id: str
-    domain: str
-    fields: dict[str, dict] = field(default_factory=unknown_fields)
-    researched_at: datetime | None = None
-    spent_units: int = 0
-    outcome: str = "failed"          # outcome of the latest finished build
-    build: Build | None = None
-    spent_before_build: int = 0
-
-    @property
-    def state(self) -> str:
-        return "building" if self.build is not None else self.outcome
 
 
 @dataclass
@@ -66,20 +41,108 @@ class IdempotencyRecord:
     body: dict
 
 
+class _BuildFailed(Exception):
+    """The build gathered nothing: no provider call was answered."""
+
+
+@dataclass
+class State:
+    """Everything the service remembers, apart from its clock and its running builds."""
+    users: dict[str, dict] = field(default_factory=dict)
+    tokens: dict[str, str] = field(default_factory=dict)
+    dossiers: dict[str, Dossier] = field(default_factory=dict)
+    idempotency: dict[tuple[str, str, str, str], IdempotencyRecord] = field(default_factory=dict)
+    counter: int = 0
+    feed: list[dict] = field(default_factory=list)
+    next_seq: int = 1
+
+
 class Store:
-    def __init__(self, build_fn: BuildFn) -> None:
+    def __init__(self, build_fn: BuildFn, journal: Journal | None = None) -> None:
         self._build_fn = build_fn
         self._lock = threading.RLock()
         self.clock = Clock()
         self._epoch = 0
-        self._users: dict[str, dict] = {}
-        self._emails: dict[str, str] = {}
-        self._tokens: dict[str, str] = {}
-        self._dossiers: dict[str, Dossier] = {}
-        self._idempotency: dict[tuple[str, str, str, str], IdempotencyRecord] = {}
-        self._dossier_counter = 0
+        self._journal = journal
+        self._pending: dict[tuple[str, object], None] = {}     # records changed since the last write
+        self._full = True                                       # the next write is a whole snapshot
+        self._feed_written = 0
+        self._adopt(State())
+        if journal is not None:
+            self._restore()
 
-    # ------------------------------------------------------------------ reset
+    def _adopt(self, state: State) -> None:
+        self._epoch += 1
+        self._users = state.users
+        self._emails = {u["email"].lower(): u["id"] for u in state.users.values()}
+        self._tokens = state.tokens
+        self._dossiers = state.dossiers
+        self._idempotency = state.idempotency
+        self._dossier_counter = state.counter
+        self._feed = state.feed
+        self._next_seq = state.next_seq
+
+    # ------------------------------------------------------------------ durability
+
+    def _restore(self) -> None:
+        """Load what the journal holds; a journal that cannot be read starts the service empty."""
+        snapshot, batches = self._journal.load()
+        clock = None
+        if snapshot is not None:
+            try:
+                state = _parse_state(copy.deepcopy(snapshot["export"]["state"]))
+                clock = snapshot["clock"]
+                for batch in batches:
+                    for kind, payload in batch:
+                        clock = _apply_record(state, kind, payload, clock)
+                self._adopt(state)
+                self.clock.restore(parse_timestamp(clock) if clock is not None else None)
+            except (KeyError, TypeError, ValueError, AttributeError, ApiError):
+                log.exception("the journal is not readable; starting empty")
+                self._adopt(State())
+        with self._lock:
+            self._persist()
+
+    def _mark(self, kind: str, key: object) -> None:
+        self._pending[(kind, key)] = None
+
+    def _persist(self) -> None:
+        """Write the changes since the last write to disk. Call with the lock held, before answering."""
+        if self._journal is None:
+            return
+        try:
+            if self._full or self._journal.size > COMPACT_BYTES:
+                self._journal.rewrite(self._snapshot())
+                self._full = False
+            else:
+                self._journal.append(self._records())
+            self._pending.clear()
+            self._feed_written = len(self._feed)
+        except Exception:   # noqa: BLE001 - the request still stands; the next write is a whole snapshot
+            log.exception("could not write the journal")
+            self._full = True
+
+    def _snapshot(self) -> dict:
+        return {"export": self.export_state(), "clock": iso(self.clock.fixed())}
+
+    def _records(self) -> list:
+        records: list = []
+        for kind, key in self._pending:
+            if kind == "user":
+                records.append(["user", copy.deepcopy(self._users[key])])
+            elif kind == "token":
+                records.append(["token", [key, self._tokens[key]]])
+            elif kind == "dossier":
+                records.append(["dossier", export_dossier(self._dossiers[key])])
+            elif kind == "idempotency":
+                records.append(["idempotency", _idempotency_entry(key, self._idempotency[key])])
+        if len(self._feed) > self._feed_written:
+            records.append(["feed", copy.deepcopy(self._feed[self._feed_written:])])
+        records.append(["meta", {"dossier_counter": self._dossier_counter, "next_seq": self._next_seq,
+                                 "clock": iso(self.clock.fixed())}])
+        return records
+
+    # ------------------------------------------------------------------ reset and clock
 
     def reset(self, fixture: dict) -> None:
         now, users = _parse_fixture(fixture)
@@ -87,18 +150,15 @@ class Store:
         for user in hashed:
             del user["password"]
         with self._lock:
-            self._replace_state(
-                users={u["id"]: u for u in hashed}, tokens={}, dossiers={}, idempotency={}, counter=0)
+            self._adopt(State(users={u["id"]: u for u in hashed}))
             self.clock.reset(now)
+            self._full = True
+            self._persist()
 
-    def _replace_state(self, users, tokens, dossiers, idempotency, counter) -> None:
-        self._epoch += 1
-        self._users = users
-        self._emails = {u["email"].lower(): u["id"] for u in users.values()}
-        self._tokens = tokens
-        self._dossiers = dossiers
-        self._idempotency = idempotency
-        self._dossier_counter = counter
+    def advance_clock(self, now: datetime) -> None:
+        with self._lock:
+            self.clock.advance_to(now)
+            self._persist()
 
     # ------------------------------------------------------------------ auth
 
@@ -111,6 +171,7 @@ class Store:
             user = {"id": user_id, "email": email, "display_name": display_name, "password_hash": digest}
             self._users[user_id] = user
             self._emails[email.lower()] = user_id
+            self._mark("user", user_id)
             return self._session(user)
 
     def login(self, email: str, password: str) -> dict:
@@ -131,6 +192,8 @@ class Store:
     def _session(self, user: dict) -> dict:
         token = secrets.token_urlsafe(32)
         self._tokens[token] = user["id"]
+        self._mark("token", token)
+        self._persist()
         return {"user_id": user["id"], "display_name": user["display_name"], "token": token}
 
     def _new_user_id(self) -> str:
@@ -156,6 +219,8 @@ class Store:
                 return 200, copy.deepcopy(record.body)
             status, body = action()
             self._idempotency[slot] = IdempotencyRecord(fingerprint, status, copy.deepcopy(body))
+            self._mark("idempotency", slot)
+            self._persist()
             return status, body
 
     # ------------------------------------------------------------------ dossiers
@@ -169,6 +234,7 @@ class Store:
             self._dossier_counter += 1
             dossier = Dossier(f"d_{self._dossier_counter}", domain)
             self._dossiers[domain] = dossier
+            self._mark("dossier", domain)
             self._start_build(dossier)
             return 202, self._summary(dossier)
 
@@ -182,17 +248,47 @@ class Store:
                 self._start_build(dossier)
             return 202, self._summary(dossier)
 
-    def get_dossier(self, domain: str) -> dict:
+    def get_dossier(self, domain: str, as_of: datetime | None = None) -> dict:
+        """The dossier now, or as the service had it at ``as_of``."""
         with self._lock:
-            dossier = self._dossiers.get(domain)
-            if dossier is None:
-                raise ApiError(404, "not_found", "no dossier for this domain")
-            return {
-                **self._summary(dossier),
-                "researched_at": _iso(dossier.researched_at),
-                "spent_units": dossier.spent_units,
-                "fields": copy.deepcopy(dossier.fields),
-            }
+            dossier = self._existing(domain)
+            if as_of is None:
+                return {
+                    **self._summary(dossier),
+                    "researched_at": iso(dossier.researched_at),
+                    "spent_units": dossier.spent_units,
+                    "fields": copy.deepcopy(dossier.fields),
+                }
+            found = dossier.snapshot_at(as_of)
+            if found is None:
+                raise ApiError(404, "not_found", "no build of this dossier completed by then")
+            record, spent = found
+            return {"dossier_id": dossier.dossier_id, "domain": dossier.domain, "state": "ready",
+                    "researched_at": record.time.isoformat(), "spent_units": spent,
+                    "fields": copy.deepcopy(record.fields)}
+
+    def values_at(self, domain: str, true_at: str, as_of: datetime | None, as_of_text: str | None) -> dict:
+        """What the evidence known at ``as_of`` says each field held on the date ``true_at``."""
+        with self._lock:
+            dossier = self._existing(domain)
+            moment = as_of if as_of is not None else self.clock.now()
+            fields = dossier.values_at(true_at, moment)
+            if fields is None:
+                raise ApiError(404, "not_found", "no build of this dossier completed by then")
+            return {"domain": dossier.domain, "true_at": true_at,
+                    "as_of": as_of_text if as_of_text is not None else moment.isoformat(), "fields": fields}
+
+    def history(self, domain: str) -> dict:
+        with self._lock:
+            dossier = self._existing(domain)
+            return {"domain": dossier.domain,
+                    "fields": {name: copy.deepcopy(dossier.history[name]) for name in ALL_FIELDS}}
+
+    def changes(self, since: int, limit: int) -> dict:
+        with self._lock:
+            start = bisect_right(self._feed, since, key=lambda entry: entry["seq"])
+            page = self._feed[start:start + limit]
+            return {"changes": copy.deepcopy(page), "has_more": start + len(page) < len(self._feed)}
 
     def list_dossiers(self, q: str, limit: int, offset: int) -> dict:
         needle = q.lower()
@@ -204,11 +300,17 @@ class Store:
                 "dossiers": [{
                     **self._summary(d),
                     "legal_name": d.fields["legal_name"]["value"],
-                    "researched_at": _iso(d.researched_at),
+                    "researched_at": iso(d.researched_at),
                     "spent_units": d.spent_units,
                 } for d in page],
                 "has_more": offset + len(page) < len(matching),
             }
+
+    def _existing(self, domain: str) -> Dossier:
+        dossier = self._dossiers.get(domain)
+        if dossier is None:
+            raise ApiError(404, "not_found", "no dossier for this domain")
+        return dossier
 
     @staticmethod
     def _summary(dossier: Dossier) -> dict:
@@ -237,13 +339,22 @@ class Store:
             if not self._current(dossier, build):
                 return
             dossier.build = None
-            if result is not None and result.succeeded:
-                retrieved_at = build.time.isoformat()
-                dossier.fields = {name: field_of(result.candidates[name], retrieved_at) for name in FIELDS}
-                dossier.researched_at = build.time
-                dossier.outcome = "ready"
+            spent = dossier.spent_units - dossier.spent_before_build
+            try:
+                if result is None or not result.succeeded:
+                    raise _BuildFailed()
+                entries = dossier.complete_build(build.time, spent, result.pages)
+            except _BuildFailed:
+                dossier.complete_failed_build(build.time, spent)
+            except Exception:   # noqa: BLE001 - nothing of a build that could not be recorded is kept
+                log.exception("could not record the build of %s", dossier.domain)
+                dossier.complete_failed_build(build.time, spent)
             else:
-                dossier.outcome = "failed"
+                for entry in entries:
+                    self._feed.append({"seq": self._next_seq, "domain": dossier.domain, **entry})
+                    self._next_seq += 1
+            self._mark("dossier", dossier.domain)
+            self._persist()
 
     def _is_current(self, dossier: Dossier, build: Build) -> bool:
         with self._lock:
@@ -259,54 +370,42 @@ class Store:
     def export_state(self) -> dict:
         """A deep, atomic snapshot. A running build is not in it: the dossier is as it was before."""
         with self._lock:
-            dossiers = []
-            for dossier in sorted(self._dossiers.values(), key=lambda d: d.domain):
-                building = dossier.build is not None
-                dossiers.append({
-                    "dossier_id": dossier.dossier_id,
-                    "domain": dossier.domain,
-                    "state": dossier.outcome,
-                    "fields": copy.deepcopy(dossier.fields),
-                    "researched_at": _iso(dossier.researched_at),
-                    "spent_units": dossier.spent_before_build if building else dossier.spent_units,
-                })
             state = {
                 "users": copy.deepcopy(list(self._users.values())),
                 "tokens": dict(self._tokens),
-                "dossiers": dossiers,
-                "idempotency": [{"user_id": u, "method": m, "path": p, "key": k,
-                                 "fingerprint": r.fingerprint, "status": r.status,
-                                 "body": copy.deepcopy(r.body)}
-                                for (u, m, p, k), r in self._idempotency.items()],
+                "dossiers": [export_dossier(d) for d in sorted(self._dossiers.values(), key=lambda d: d.domain)],
+                "idempotency": [_idempotency_entry(slot, record) for slot, record in self._idempotency.items()],
                 "dossier_counter": self._dossier_counter,
+                "feed": copy.deepcopy(self._feed),
+                "next_seq": self._next_seq,
             }
             return {"track": EXPORT_TRACK, "format_version": EXPORT_VERSION, "state": state}
 
     def import_state(self, document: dict) -> None:
         """Replace every piece of state with an export; invalid input changes nothing."""
-        if document.get("track") != EXPORT_TRACK or not _is_int(document.get("format_version")) \
+        if document.get("track") != EXPORT_TRACK or not is_int(document.get("format_version")) \
                 or document["format_version"] != EXPORT_VERSION:
             raise validation_failed("not a dossier export of format version 1")
         state = document.get("state")
         if not isinstance(state, dict):
             raise validation_failed("state must be an object")
         try:
-            users, tokens, dossiers, idempotency, counter = _parse_state(copy.deepcopy(state))
-        except (KeyError, TypeError, ValueError, AttributeError) as error:
+            parsed = _parse_state(copy.deepcopy(state))
+        except (KeyError, TypeError, ValueError, AttributeError, ApiError) as error:
             raise validation_failed(f"invalid state: {error}") from None
         with self._lock:
-            self._replace_state(users, tokens, dossiers, idempotency, counter)
+            self._adopt(parsed)
+            self._full = True
+            self._persist()
+
+
+def _idempotency_entry(slot: tuple, record: IdempotencyRecord) -> dict:
+    user_id, method, path, key = slot
+    return {"user_id": user_id, "method": method, "path": path, "key": key, "fingerprint": record.fingerprint,
+            "status": record.status, "body": copy.deepcopy(record.body)}
 
 
 # ---------------------------------------------------------------------- parsing helpers
-
-def _iso(moment: datetime | None) -> str | None:
-    return moment.isoformat() if moment is not None else None
-
-
-def _is_int(value) -> bool:
-    return isinstance(value, int) and not isinstance(value, bool)
-
 
 def _parse_fixture(fixture: dict) -> tuple[datetime, list[dict]]:
     if "now" not in fixture:
@@ -337,84 +436,10 @@ def _parse_fixture(fixture: dict) -> tuple[datetime, list[dict]]:
     return now, users
 
 
-def _parse_fields(raw: dict, researched_at: datetime | None, domain: str) -> dict[str, dict]:
-    """The fields of an exported dossier, recomputed from their candidates by the selection rule."""
-    if set(raw) != set(FIELDS):
-        raise ValueError("fields must be the six dossier fields")
-    for entry in raw.values():
-        if entry["status"] not in ("known", "contested", "unknown"):
-            raise ValueError("bad field status")
-    if all("candidates" in entry for entry in raw.values()):
-        found = {name: [_parse_candidate(name, c) for c in raw[name]["candidates"]] for name in FIELDS}
-        if any((entry["status"] == "unknown") != (not found[name]) for name, entry in raw.items()):
-            raise ValueError("field status does not match its evidence")
-    else:
-        found = _stage_one_candidates(raw, researched_at, domain)
-    return {name: field_of(found[name]) for name in FIELDS}
 
 
-def _stage_one_candidates(raw: dict, researched_at: datetime | None, domain: str) -> dict[str, list[Candidate]]:
-    """Candidates of a stage-1 export, which keeps only each field's value and its citations.
-
-    The export holds no served page text, so the text of a citation's page is known only as far
-    as its excerpt: that is a candidate for the field it cites and for every other field the
-    excerpt supports. They are retrieved when the dossier was last researched and have no kind
-    or publication time.
-    """
-    retrieved_at = researched_at.isoformat() if researched_at is not None else None
-    found: dict[str, list[Candidate]] = {name: [] for name in FIELDS}
-    seen: set[tuple[str, str, object]] = set()
-
-    def add(name: str, value: object, citation: dict) -> None:
-        candidate = _parse_candidate(name, {"value": value, "url": citation["url"], "excerpt": citation["excerpt"],
-                                            "provider": citation["provider"], "kind": None, "published_at": None,
-                                            "retrieved_at": retrieved_at})
-        if (name, candidate.url, candidate.value) not in seen:
-            seen.add((name, candidate.url, candidate.value))
-            found[name].append(candidate)
-
-    cited = []
-    for name in FIELDS:
-        entry = raw[name]
-        if (entry["status"] == "known") != (entry["value"] is not None and bool(entry["citations"])) \
-                or (entry["status"] == "unknown" and entry["citations"]):
-            raise ValueError("field status does not match its evidence")
-        for citation in entry["citations"]:
-            add(name, entry["value"], citation)
-            cited.append(citation)
-    for citation in cited:
-        for name in FIELDS:
-            value = supported_value(name, citation["excerpt"], domain)
-            if value is not None:
-                add(name, value, citation)
-    return found
-
-
-def _parse_candidate(name: str, entry: dict) -> Candidate:
-    candidate = candidate_of(entry)
-    _check_value(name, candidate.value)
-    if not all(isinstance(v, str) for v in (candidate.url, candidate.excerpt, candidate.provider)):
-        raise ValueError("bad candidate")
-    if candidate.kind is not None and candidate.kind not in KINDS:
-        raise ValueError("bad candidate kind")
-    for stamp in (candidate.published_at, candidate.retrieved_at):
-        if stamp is not None and try_parse_timestamp(stamp) is None:
-            raise ValueError("bad candidate timestamp")
-    return candidate
-
-
-def _check_value(name: str, value) -> None:
-    if name in ("founded_year", "funding_total"):
-        ok = _is_int(value)
-    elif name == "headcount_range":
-        ok = value in HEADCOUNT_VALUES
-    else:
-        ok = isinstance(value, str)
-    if not ok:
-        raise ValueError(f"bad value for {name}")
-
-
-def _parse_state(state: dict):
+def _parse_state(state: dict) -> State:
+    """The state of an export; a stage-3 export (it holds the feed) or one of stage 1 or 2, which is upgraded."""
     users: dict[str, dict] = {}
     for raw in state["users"]:
         user = {k: raw[k] for k in ("id", "email", "display_name", "password_hash")}
@@ -426,28 +451,57 @@ def _parse_state(state: dict):
     tokens = state["tokens"]
     if not isinstance(tokens, dict) or any(not isinstance(v, str) or v not in users for v in tokens.values()):
         raise ValueError("bad tokens")
+    stage_three = "feed" in state
     dossiers: dict[str, Dossier] = {}
     ids = set()
     for raw in state["dossiers"]:
-        if raw["state"] not in ("ready", "failed"):
-            raise ValueError("bad dossier state")
-        if not isinstance(raw["dossier_id"], str) or not isinstance(raw["domain"], str) \
-                or not is_valid_domain(raw["domain"]) or not _is_int(raw["spent_units"]) \
-                or raw["spent_units"] < 0 or raw["domain"] in dossiers or raw["dossier_id"] in ids:
+        dossier = parse_dossier(raw) if stage_three else upgrade_dossier(raw)
+        if dossier.domain in dossiers or dossier.dossier_id in ids:
             raise ValueError("bad dossier")
-        ids.add(raw["dossier_id"])
-        researched = parse_timestamp(raw["researched_at"]) if raw["researched_at"] is not None else None
-        dossiers[raw["domain"]] = Dossier(
-            raw["dossier_id"], raw["domain"], _parse_fields(raw["fields"], researched, raw["domain"]), researched,
-            raw["spent_units"], raw["state"])
+        ids.add(dossier.dossier_id)
+        dossiers[dossier.domain] = dossier
     idempotency = {}
     for raw in state["idempotency"]:
-        slot = tuple(raw[k] for k in ("user_id", "method", "path", "key"))
-        if not all(isinstance(v, str) for v in slot) or not isinstance(raw["body"], dict) \
-                or not isinstance(raw["fingerprint"], str) or not _is_int(raw["status"]):
-            raise ValueError("bad idempotency record")
-        idempotency[slot] = IdempotencyRecord(raw["fingerprint"], raw["status"], raw["body"])
+        slot, record = _parse_idempotency(raw)
+        idempotency[slot] = record
     counter = state["dossier_counter"]
-    if not _is_int(counter) or counter < 0:
+    if not is_int(counter) or counter < 0:
         raise ValueError("bad counter")
-    return users, dict(tokens), dossiers, idempotency, counter
+    feed, next_seq = [], 1
+    if stage_three:
+        feed = [parse_feed_entry(e) for e in state["feed"]]
+        next_seq = state["next_seq"]
+        seqs = [e["seq"] for e in feed]
+        if seqs != sorted(set(seqs)) or not is_int(next_seq) or next_seq <= (seqs[-1] if seqs else 0):
+            raise ValueError("bad feed")
+    return State(users, dict(tokens), dossiers, idempotency, counter, feed, next_seq)
+
+
+def _parse_idempotency(raw: dict) -> tuple[tuple, IdempotencyRecord]:
+    slot = tuple(raw[k] for k in ("user_id", "method", "path", "key"))
+    if not all(isinstance(v, str) for v in slot) or not isinstance(raw["body"], dict) \
+            or not isinstance(raw["fingerprint"], str) or not is_int(raw["status"]):
+        raise ValueError("bad idempotency record")
+    return slot, IdempotencyRecord(raw["fingerprint"], raw["status"], raw["body"])
+
+
+def _apply_record(state: State, kind: str, payload, clock: str | None) -> str | None:
+    """Apply one journal record to ``state``; the clock reading it leaves."""
+    if kind == "user":
+        state.users[payload["id"]] = payload
+    elif kind == "token":
+        state.tokens[payload[0]] = payload[1]
+    elif kind == "dossier":
+        dossier = parse_dossier(payload)
+        state.dossiers[dossier.domain] = dossier
+    elif kind == "idempotency":
+        slot, record = _parse_idempotency(payload)
+        state.idempotency[slot] = record
+    elif kind == "feed":
+        state.feed.extend(payload)
+    elif kind == "meta":
+        state.counter, state.next_seq = payload["dossier_counter"], payload["next_seq"]
+        clock = payload["clock"]
+    else:
+        raise ValueError(f"unknown journal record {kind}")
+    return clock

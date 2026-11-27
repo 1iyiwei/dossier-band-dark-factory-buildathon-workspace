@@ -18,6 +18,7 @@ class Settings:
     gather_window: float        # no new provider call starts after this many seconds of a build
     research_start_limit: float # nor a research run, which needs the most time
     hard_limit: float           # a build is over by this many seconds, whatever is outstanding
+    data_dir: str = ""          # where the state journal lives; it must survive a container restart
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -26,10 +27,14 @@ class Settings:
         live = host == LIVE_NIMBLE_HOST
         if live:
             return cls(_port(), True, call_timeout=45.0, research_timeout=150.0,
-                       gather_window=200.0, research_start_limit=130.0, hard_limit=285.0)
+                       gather_window=200.0, research_start_limit=130.0, hard_limit=285.0, data_dir=_data_dir())
         return cls(_port(), False, call_timeout=12.0, research_timeout=12.0,
-                   gather_window=6.0, research_start_limit=6.0, hard_limit=20.0)
+                   gather_window=6.0, research_start_limit=6.0, hard_limit=20.0, data_dir=_data_dir())
 
 
 def _port() -> int:
     return int(os.environ.get("PORT", "8080"))
+
+
+def _data_dir() -> str:
+    return os.environ.get("DATA_DIR", "/var/lib/dossier")

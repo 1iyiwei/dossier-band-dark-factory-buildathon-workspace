@@ -24,8 +24,8 @@ from .evidence import Evidence
 from .gateway import RENDERED_EXTRACT_COST, BuildStopped, CallFailed, Gateway, SearchHit
 from .ledger import BudgetExhausted
 from .pages import citable_sentences, parse_served_text
-from .selection import Candidate
-from .support import FIELDS, names_company, supported_value
+from .support import SLOTS, names_company, supported_value
+from .versions import PageVersion
 
 log = logging.getLogger("dossier.builder")
 
@@ -36,6 +36,7 @@ FIELD_QUERIES = {
     "founded_year": "founded established incorporated founding",
     "headcount_range": "employees headcount staff people workforce",
     "funding_total": "raised funding investment invested",
+    "executives": "chief financial officer CFO chief operating officer COO chief technology officer CTO",
 }
 _SEPARATORS = re.compile(r"[-_./]+")
 PREFILTER_SHARE = 0.3          # at most this share of the budget left after discovery checks doubtful pages
@@ -44,7 +45,7 @@ MENTION_BONUS = 2.0
 
 @dataclass(frozen=True)
 class BuildResult:
-    candidates: dict[str, list[Candidate]]
+    pages: list[PageVersion]    # every page the build read, with what its text supports
     succeeded: bool             # some provider call was answered
 
 
@@ -61,13 +62,13 @@ class Builder:
             self._read(found, cited)
         except (BuildStopped, BudgetExhausted):
             pass
-        return BuildResult(self._evidence.candidates(), self._gateway.successes > 0)
+        return BuildResult(self._evidence.pages(), self._gateway.successes > 0)
 
     # ---------------------------------------------------------------- discovery
 
     def _discover(self) -> tuple[dict[str, list[tuple[int, SearchHit]]], list[str]]:
         """Run every search and the research run together: the pages found, with their ranks, and the cited ones."""
-        queries = [self._domain, *(f"{self._domain} {FIELD_QUERIES[field]}" for field in FIELDS)]
+        queries = [self._domain, *(f"{self._domain} {query}" for query in FIELD_QUERIES.values())]
         calls = [lambda q=query: self._gateway.search(q) for query in queries]
         if self._gateway.can_research():
             calls.append(self._research)
@@ -123,7 +124,7 @@ class Builder:
         if self._names_company(hit):
             score += 2.0
         if any(supported_value(field, sentence, self._domain) is not None
-               for sentence in citable_sentences(parse_served_text(hit.text).prose) for field in FIELDS):
+               for sentence in citable_sentences(parse_served_text(hit.text).prose) for field in SLOTS):
             score += 2.0
         return score + sum(1.0 - 0.05 * rank for rank, _ in appearances)
 

@@ -6,6 +6,7 @@ from dossier_service.builder import BuildResult
 from dossier_service.errors import ApiError
 from dossier_service.selection import Candidate
 from dossier_service.store import Store
+from dossier_service.versions import PageVersion
 
 FIXTURE = {"now": "2026-03-01T09:00:00+00:00",
            "users": [{"id": "u_ada", "email": "ada@example.com", "password": "correct horse",
@@ -14,9 +15,9 @@ FIXTURE = {"now": "2026-03-01T09:00:00+00:00",
 
 def build_fn(domain, on_spend, stopped):
     on_spend(7)
-    candidates = {name: [] for name in ("legal_name", "hq_city", "ceo", "founded_year", "headcount_range", "funding_total")}
-    candidates["ceo"] = [Candidate("Dana Ruiz", "https://x.test/a", "e", "nimble", "own", "2026-01-10T00:00:00+00:00")]
-    return BuildResult(candidates, True)
+    ceo = Candidate("Dana Ruiz", "https://x.test/a", "e", "nimble", "own", "2026-01-10T00:00:00+00:00",
+                    true_from="2026-01-10")
+    return BuildResult([PageVersion("https://x.test/a", "2026-01-10", (("ceo", ceo),))], True)
 
 
 def wait_built(store, domain):
@@ -127,7 +128,7 @@ class StoreTests(unittest.TestCase):
     def test_clock_only_moves_forward(self):
         from dossier_service.clock import parse_timestamp
         with self.assertRaises(ApiError):
-            self.store.clock.advance_to(parse_timestamp("2026-02-01T00:00:00+00:00"))
+            self.store.advance_clock(parse_timestamp("2026-02-01T00:00:00+00:00"))
 
 
 if __name__ == "__main__":

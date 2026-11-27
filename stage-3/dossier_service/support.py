@@ -11,6 +11,10 @@ from decimal import Decimal
 from .domains import company_name
 
 FIELDS = ("legal_name", "hq_city", "ceo", "founded_year", "headcount_range", "funding_total")
+EXEC_TITLES = ("cfo", "coo", "cto")
+EXECUTIVES = "executives"
+ALL_FIELDS = FIELDS + (EXECUTIVES,)
+SLOTS = FIELDS + EXEC_TITLES         # what candidates are kept under: the six fields and each executive title
 
 PHRASES = {
     "legal_name": ("legal name", "registered name", "registered as", "registered company",
@@ -21,6 +25,9 @@ PHRASES = {
     "founded_year": ("founded", "founding", "established", "incorporated"),
     "headcount_range": ("employs", "employees", "staff", "people", "headcount", "workforce"),
     "funding_total": ("raised", "funding", "invested", "investment"),
+    "cfo": ("chief financial officer", "CFO"),
+    "coo": ("chief operating officer", "COO"),
+    "cto": ("chief technology officer", "CTO"),
 }
 
 NEGATING = ("in talks to", "plans to", "planning to", "wants to", "expects to", "hopes to",
@@ -265,9 +272,10 @@ def _cities(text: str) -> list[str]:
     return values
 
 
-def _people(text: str, domain: str) -> list[str]:
+def _people(text: str, domain: str, title: str) -> list[str]:
+    """Person names (A.4, ``ceo`` format) in ``text``, read with the statement phrases of ``title`` taken out."""
     scrubbed = text
-    removable = [company_name(domain), *sorted(PHRASES["ceo"], key=len, reverse=True)]
+    removable = [company_name(domain), *sorted(PHRASES[title], key=len, reverse=True)]
     for phrase in removable:
         scrubbed = _phrase_regex(phrase).sub("\x00", scrubbed)
     words = _words(scrubbed)
@@ -313,8 +321,8 @@ def candidate_values(field: str, text: str, domain: str) -> list:
         return _legal_names(text, domain)
     if field == "hq_city":
         return _cities(text)
-    if field == "ceo":
-        return _people(text, domain)
+    if field == "ceo" or field in EXEC_TITLES:
+        return _people(text, domain, field)
     if field == "founded_year":
         return _years(text)
     if field == "headcount_range":

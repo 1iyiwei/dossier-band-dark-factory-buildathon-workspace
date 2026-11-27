@@ -6,12 +6,13 @@ import logging
 import re
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, unquote, urlsplit
+from urllib.parse import parse_qs, unquote, unquote_plus, urlsplit
 
 from .clock import parse_timestamp
 from .domains import parse_domain
 from .errors import ApiError, malformed, validation_failed
 from .store import Store
+from .versions import valid_date
 from .ui import asset, shell
 
 log = logging.getLogger("dossier.http")
@@ -169,6 +170,7 @@ class Handler(BaseHTTPRequestHandler):
             ("POST", "/auth/login"): self._login,
             ("POST", "/dossiers"): self._create_dossier,
             ("GET", "/dossiers"): lambda: self._list_dossiers(url.query),
+            ("GET", "/changes"): lambda: self._list_changes(url.query),
         }
         handler = simple.get((method, path.rstrip("/") or "/"))
         if handler is not None:
@@ -176,7 +178,10 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/dossiers/") and len(path) > len("/dossiers/"):
             rest = path[len("/dossiers/"):]
             if method == "GET":
-                return self._get_dossier(unquote(rest))
+                for suffix, handler in (("/values", self._get_values), ("/history", self._get_history)):
+                    if rest.endswith(suffix):
+                        return handler(unquote(rest[:-len(suffix)]), url.query)
+                return self._get_dossier(unquote(rest), url.query)
             if method == "POST" and rest.endswith("/refresh"):
                 return self._refresh_dossier(path, unquote(rest[:-len("/refresh")]))
         raise ApiError(404, "not_found", "no such route")
@@ -210,7 +215,7 @@ class Handler(BaseHTTPRequestHandler):
         now = body["now"]
         if not isinstance(now, str):
             raise malformed("now must be a string")
-        self.server.store.clock.advance_to(parse_timestamp(now))
+        self.server.store.advance_clock(parse_timestamp(now))
         return 204, None
 
     def _export(self):
@@ -285,12 +290,36 @@ class Handler(BaseHTTPRequestHandler):
 
         return store.idempotent(user_id, "POST", raw_path, key, "", action)
 
-    def _get_dossier(self, raw_domain: str):
+    def _dossier_domain(self, raw_domain: str) -> str:
         self._user_id()
         domain = parse_domain(raw_domain)
         if domain is None:
             raise validation_failed("domain is not a valid host name")
-        return 200, self.server.store.get_dossier(domain)
+        return domain
+
+    def _get_dossier(self, raw_domain: str, query: str):
+        domain = self._dossier_domain(raw_domain)
+        as_of = _optional_timestamp(query, "as_of")
+        return 200, self.server.store.get_dossier(domain, as_of)
+
+    def _get_values(self, raw_domain: str, query: str):
+        domain = self._dossier_domain(raw_domain)
+        true_at = _raw_param(query, "true_at")
+        if true_at is None or not valid_date(true_at):
+            raise validation_failed("true_at must be a date written YYYY-MM-DD")
+        as_of_text = _raw_param(query, "as_of")
+        as_of = _optional_timestamp(query, "as_of")
+        return 200, self.server.store.values_at(domain, true_at, as_of, as_of_text)
+
+    def _get_history(self, raw_domain: str, query: str):
+        return 200, self.server.store.history(self._dossier_domain(raw_domain))
+
+    def _list_changes(self, query: str):
+        self._user_id()
+        params = parse_qs(query, keep_blank_values=True)
+        since = _int_param(params, "since", 0, 0, None)
+        limit = _int_param(params, "limit", 50, 1, 200)
+        return 200, self.server.store.changes(since, limit)
 
     def _list_dossiers(self, query: str):
         self._user_id()
@@ -299,6 +328,20 @@ class Handler(BaseHTTPRequestHandler):
         offset = _int_param(params, "offset", 0, 0, None)
         q = params.get("q", [""])[0]
         return 200, self.server.store.list_dossiers(q, limit, offset)
+
+
+def _raw_param(query: str, name: str) -> str | None:
+    """A query parameter's value with percent-escapes decoded; a ``+`` stays a ``+``, as in a UTC offset."""
+    for pair in query.split("&"):
+        key, _, value = pair.partition("=")
+        if unquote_plus(key) == name:
+            return unquote(value)
+    return None
+
+
+def _optional_timestamp(query: str, name: str):
+    text = _raw_param(query, name)
+    return None if text is None else parse_timestamp(text)
 
 
 def _int_param(params: dict, name: str, default: int, low: int, high: int | None) -> int:

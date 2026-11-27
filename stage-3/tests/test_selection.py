@@ -17,7 +17,8 @@ def values(field):
 
 class SelectionTests(unittest.TestCase):
     def test_no_candidate_is_unknown(self):
-        self.assertEqual(field_of([]), {"value": None, "status": "unknown", "citations": [], "candidates": []})
+        self.assertEqual(field_of([]), {"value": None, "status": "unknown", "true_from": None, "learned_at": None,
+                                         "citations": [], "candidates": []})
 
     def test_authority_outranks_recency(self):
         field = field_of([cand("Sam", kind="aggregator", published=NEW), cand("Dana", kind="own", published=OLD),
@@ -66,9 +67,11 @@ class EvidenceTests(unittest.TestCase):
         text = "Kind: news\nPublished: 2026-02-20T00:00:00Z\n\nAcme Robotics CEO: Sam Ortiz.\nAcme Robotics CEO: Sam Ortiz."
         evidence = Evidence("acme-robotics.test")
         evidence.add_page("https://wire.test/x", "nimble", text)
-        [candidate] = evidence.candidates()["ceo"]
-        self.assertEqual((candidate.value, candidate.kind, candidate.published_at),
-                         ("Sam Ortiz", "news", NEW))
+        [page] = evidence.pages()
+        [(slot, candidate)] = page.candidates
+        self.assertEqual((slot, candidate.value, candidate.kind, candidate.published_at, candidate.true_from),
+                         ("ceo", "Sam Ortiz", "news", NEW, "2026-02-20"))
+        self.assertEqual(page.true_from, "2026-02-20")
 
     def test_page_kind_falls_back_to_host(self):
         self.assertEqual(page_kind({}, "https://www.acme.test/about", "acme.test"), "own")
@@ -83,7 +86,8 @@ class EvidenceTests(unittest.TestCase):
         text = "\nAcme Robotics was founded in 2014. Founded in 2014, Acme Robotics is small. Acme Robotics was founded in 2015."
         evidence = Evidence("acme-robotics.test")
         evidence.add_page("https://a.test/", "nimble", text)
-        self.assertEqual([c.value for c in evidence.candidates()["founded_year"]], [2014, 2015])
+        [page] = evidence.pages()
+        self.assertEqual([c.value for slot, c in page.candidates if slot == "founded_year"], [2014, 2015])
 
 
 if __name__ == "__main__":

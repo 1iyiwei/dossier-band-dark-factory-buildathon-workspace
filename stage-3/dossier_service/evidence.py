@@ -7,7 +7,8 @@ from .clock import try_parse_timestamp
 from .domains import normalise_domain
 from .pages import citable_sentences, parse_served_text
 from .selection import KINDS, Candidate
-from .support import FIELDS, supported_value
+from .support import SLOTS, supported_value
+from .versions import PageVersion, page_true_from
 
 
 def page_kind(header: dict[str, str], url: str, domain: str) -> str:
@@ -26,25 +27,28 @@ def published_at(header: dict[str, str]) -> str | None:
 
 
 class Evidence:
-    """The candidates of one company, gathered from the browser text of the pages one build read."""
+    """The page versions of one company that one build gathered: the pages it read and what they support."""
 
     def __init__(self, domain: str) -> None:
         self.domain = domain
-        self._candidates: dict[str, list[Candidate]] = {f: [] for f in FIELDS}
-        self._seen: set[tuple[str, str, object]] = set()
+        self._pages: list[PageVersion] = []
 
     def add_page(self, url: str, provider: str, text: str) -> None:
         """Read the text a provider served for ``url``: every value one of its sentences supports is a candidate."""
         parsed = parse_served_text(text)
         kind = page_kind(parsed.header, url, self.domain)
         published = published_at(parsed.header)
+        true_from = page_true_from(parsed.header, published)
+        seen: set[tuple[str, object]] = set()
+        found: list[tuple[str, Candidate]] = []
         for sentence in citable_sentences(parsed.prose):
-            for field in FIELDS:
-                value = supported_value(field, sentence, self.domain)
-                if value is None or (field, url, value) in self._seen:
+            for slot in SLOTS:
+                value = supported_value(slot, sentence, self.domain)
+                if value is None or (slot, value) in seen:
                     continue
-                self._seen.add((field, url, value))
-                self._candidates[field].append(Candidate(value, url, sentence, provider, kind, published))
+                seen.add((slot, value))
+                found.append((slot, Candidate(value, url, sentence, provider, kind, published, true_from=true_from)))
+        self._pages.append(PageVersion(url, true_from, tuple(found)))
 
-    def candidates(self) -> dict[str, list[Candidate]]:
-        return {field: list(found) for field, found in self._candidates.items()}
+    def pages(self) -> list[PageVersion]:
+        return list(self._pages)

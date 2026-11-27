@@ -44,6 +44,15 @@ class Clock:
         with self._lock:
             self._fixed = now
 
+    def fixed(self) -> datetime | None:
+        """The time the clock stands at, or None while it follows the system time."""
+        with self._lock:
+            return self._fixed
+
+    def restore(self, fixed: datetime | None) -> None:
+        with self._lock:
+            self._fixed = fixed
+
     def advance_to(self, now: datetime) -> None:
         """Move the clock; a time earlier than the current one is refused and changes nothing."""
         with self._lock:

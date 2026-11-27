@@ -1,7 +1,7 @@
 # Dossier service — build and run
 
 ```sh
-docker build -t dossier stage-2
+docker build -t dossier stage-3
 docker run --rm -p 8080:8080 \
   -e PORT=8080 \
   -e NIMBLE_API_KEY=... -e NIMBLE_BASE_URL=https://sdk.nimbleway.com \
@@ -11,6 +11,10 @@ docker run --rm -p 8080:8080 \
   dossier
 curl http://localhost:8080/health      # {"status": "ok"}
 ```
+
+State is written to a journal under `DATA_DIR` (default `/var/lib/dossier`, in the container's
+filesystem) before every request that changes it is answered, so it survives `docker stop`, `docker kill`
+and `docker start` of the same container. Give `-v dossier-data:/var/lib/dossier` to keep it beyond the container.
 
 Open `http://localhost:8080/` in a browser for the UI: dossier list and research form (`/`), one
 dossier (`/dossiers/{domain}`), its evidence (`/dossiers/{domain}/evidence`), contested fields
@@ -29,8 +33,8 @@ normalises to `acme.test`.
 
 ## Design in brief
 
-* One Python process (`dossier_service/`), standard-library HTTP server, in-memory state behind a
-  lock. Every provider call goes through `web_router` in-process.
+* One Python process (`dossier_service/`), standard-library HTTP server, state in memory behind a
+  lock and in an append-only journal on disk. Every provider call goes through `web_router` in-process.
 * `support.py` implements Appendix A. `evidence.py` reads a page's browser text and turns every
   sentence that supports a value into a candidate (one per page and value) with the page's kind
   and publication time. `selection.py` ranks a field's candidates (authority, recency, URL,
@@ -42,10 +46,20 @@ normalises to `acme.test`.
   checked with a plain extract (1 unit) and rendered only if the text it serves names the company. Page text is read only from the rendered extract, because a search or
   a plain extract can serve text a browser does not show. `gateway.py` retries a 429 after 1.05 s
   (up to three times); that waiting does not count toward the build's time window.
-* `store.py` holds users, tokens, dossiers, idempotency records and the export/import format; reset
-  and import bump an epoch so a build still running cannot change what follows. A stage-1 export
-  imports: each cited excerpt becomes a candidate for its field and for every other field it supports,
-  with no kind or publication time, retrieved at the dossier's `researched_at`, and the field is recomputed by the selection rule.
+* `dossier.py` is one dossier: its builds (each with the pages it gathered and the seven fields it left),
+  the history of every field and the rule for what counts as a `change` or a `correction`. A finished
+  build is applied in one step under the store lock, so each change is recorded, and numbered in the
+  feed, exactly once. `versions.py` holds the page-version rules behind `GET /dossiers/{domain}/values`
+  (`true_from` from `Effective`, else the UTC date of `Published`).
+* `store.py` holds users, tokens, dossiers, the change feed, idempotency records and the export/import
+  format; reset and import bump an epoch so a build still running cannot change what follows.
+  `codec.py` turns dossiers into their exported form and back. A stage-1 or stage-2 export is upgraded
+  there: it counts as one ready build at `researched_at` (stage 1: each cited excerpt becomes a candidate
+  for every field it supports; stage 2: its candidates are kept, and `true_from` follows from their
+  publication time, since the export holds no `Effective` line), and its fields get one `initial` history entry.
+* `persistence.py` is the journal: one JSON line per batch of changed records, flushed with `fsync` before
+  the request that made the change is answered, compacted to one atomic snapshot at start. A torn last
+  line from an abrupt stop is ignored. The clock reading is part of it.
 * `ui.py` and `static/` serve the browser UI, which reads the JSON API with the bearer token kept in
   `localStorage`. A research or refresh whose response is lost stays retryable with the same key.
 
