@@ -7,9 +7,10 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 STAGE_DIR="${STAGE_DIR:-$(cd "$HERE/../.." && pwd)}"
 KICKOFF_DIR="${KICKOFF_DIR:-/Users/lwei/Trees/band-dark-factory-buildathoan-workspace/sf-buildathon-2026}"
 S1_DIR="${S1_DIR:-$STAGE_DIR/../stage-1}"      # the team's final stage-1 service (upgrade tests); S1_DIR="" skips them
+S2_DIR="${S2_DIR:-$STAGE_DIR/../stage-2}"      # the team's final stage-2 service (upgrade tests); S2_DIR="" skips them
 TAG="an$$"
-NET="net-$TAG"; MOCKC="mock-$TAG"; SVC="svc-$TAG"; SVC2="svc2-$TAG"; SVC3="svc3-$TAG"; SVCS1="svcs1-$TAG"
-cleanup() { docker rm -f "$MOCKC" "$SVC" "$SVC2" "$SVC3" "$SVCS1" >/dev/null 2>&1; docker network rm "$NET" >/dev/null 2>&1; }
+NET="net-$TAG"; MOCKC="mock-$TAG"; SVC="svc-$TAG"; SVC2="svc2-$TAG"; SVC3="svc3-$TAG"; SVCS1="svcs1-$TAG"; SVCS2="svcs2-$TAG"
+cleanup() { docker rm -f "$MOCKC" "$SVC" "$SVC2" "$SVC3" "$SVCS1" "$SVCS2" >/dev/null 2>&1; docker network rm "$NET" >/dev/null 2>&1; }
 trap cleanup EXIT
 set -e
 docker build -q -t "dossier-web-$TAG" "$KICKOFF_DIR/challenges/dossier/web" >/dev/null
@@ -40,9 +41,10 @@ start_svc "$SVC3" -p 127.0.0.1::8080 "dossier-svc-$TAG"
 P3=$(docker port "$SVC3" 8080/tcp | head -1 | sed 's/.*://')
 echo "DEP-2/DEP-3: healthy on default port 8080 after $(wait_health "$P3")s"
 docker rm -f "$SVC3" >/dev/null
-start_svc "$SVC" -e PORT=8000 -p 127.0.0.1::8000 "dossier-svc-$TAG"
+# the service under test has a fixed host port: RESTART_CMD kills it (SIGKILL) and starts the same container again
+P1=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1])')
+start_svc "$SVC" -e PORT=8000 -p 127.0.0.1:$P1:8000 "dossier-svc-$TAG"
 start_svc "$SVC2" -e PORT=8000 -p 127.0.0.1::8000 "dossier-svc-$TAG"
-P1=$(docker port "$SVC" 8000/tcp | head -1 | sed 's/.*://')
 P2=$(docker port "$SVC2" 8000/tcp | head -1 | sed 's/.*://')
 echo "DEP-3: healthy with -e PORT=8000 after $(wait_health "$P1")s"; wait_health "$P2" >/dev/null
 BASE_S1=""
@@ -52,8 +54,16 @@ if [ -n "$S1_DIR" ] && [ -f "$S1_DIR/Dockerfile" ]; then
   PS1=$(docker port "$SVCS1" 8000/tcp | head -1 | sed 's/.*://')
   wait_health "$PS1" >/dev/null && BASE_S1="http://127.0.0.1:$PS1"
 fi
+BASE_S2=""
+if [ -n "$S2_DIR" ] && [ -f "$S2_DIR/Dockerfile" ]; then
+  docker build -q -t "dossier-svc2-$TAG" "$S2_DIR" >/dev/null
+  start_svc "$SVCS2" -e PORT=8000 -p 127.0.0.1::8000 "dossier-svc2-$TAG"
+  PS2=$(docker port "$SVCS2" 8000/tcp | head -1 | sed 's/.*://')
+  wait_health "$PS2" >/dev/null && BASE_S2="http://127.0.0.1:$PS2"
+fi
+RESTART="docker kill $SVC >/dev/null && docker start $SVC >/dev/null"
 set +e
-BASE_URL="http://127.0.0.1:$P1" BASE_URL_2="http://127.0.0.1:$P2" BASE_URL_S1="$BASE_S1" MOCK_URL="http://127.0.0.1:$MOCK_PORT" \
+RESTART_CMD="$RESTART" BASE_URL_S2="$BASE_S2" BASE_URL="http://127.0.0.1:$P1" BASE_URL_2="http://127.0.0.1:$P2" BASE_URL_S1="$BASE_S1" MOCK_URL="http://127.0.0.1:$MOCK_PORT" \
   "$HERE/run_against.sh" "$@"
 RC=$?
 echo "DEP-4 resource peek: $(docker stats --no-stream --format '{{.Name}} mem={{.MemUsage}} cpu={{.CPUPerc}}' "$SVC")"

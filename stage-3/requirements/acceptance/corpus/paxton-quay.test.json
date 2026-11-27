@@ -1,0 +1,45 @@
+{
+ "domain": "paxton-quay.test",
+ "names": [
+  "Paxton Quay"
+ ],
+ "pages": [
+  {
+   "url": "https://paxton-quay.test/people",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": "2025-02-01",
+   "title": "People",
+   "text": "Paxton Quay CEO Dana Reyes and CFO Tom Wells joined in 2019.\nPaxton Quay's chief financial officer is Iris Holt.\nFormer CFO Walt Moss left Paxton Quay in 2020.\nPaxton Quay will become a public company and its COO Sara Lund will lead the listing.\nPaxton Quay is advised by Brightline Partners, whose CFO is Tom Wells.\nPaxton Quay COO: Rhea Cho.\nPaxton Quay CTO: Yan Li Wu.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "paxton-quay.test"
+   }
+  },
+  {
+   "url": "https://bizlistings-hub.test/paxton-quay",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-25T00:00:00Z",
+   "true_from": "2018-01-01",
+   "title": "Paxton Quay company data",
+   "text": "Paxton Quay CFO: Walt Moss.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "bizlistings-hub.test"
+   }
+  }
+ ],
+ "research": {}
+}

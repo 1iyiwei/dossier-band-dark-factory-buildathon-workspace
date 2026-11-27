@@ -25,7 +25,12 @@ PHRASES = {
     "founded_year": ["founded", "founding", "established", "incorporated"],
     "headcount_range": ["employs", "employees", "staff", "people", "headcount", "workforce"],
     "funding_total": ["raised", "funding", "invested", "investment"],
+    # stage 3 (stage-3.md Executives): each title is a field with the format and normalisation of ceo
+    "cfo": ["chief financial officer", "CFO"],
+    "coo": ["chief operating officer", "COO"],
+    "cto": ["chief technology officer", "CTO"],
 }
+TITLES = ("cfo", "coo", "cto")
 NEGATING = ["in talks to", "plans to", "planning to", "wants to", "expects to", "hopes to",
             "aims to", "seeking", "could", "would", "might", "reportedly", "rumoured", "former",
             "formerly", "will become", "not"]
@@ -254,9 +259,9 @@ def hq_values(text: str) -> list[str]:
     return vals
 
 
-def ceo_values(text: str, domain: str) -> list[str]:
+def ceo_values(text: str, domain: str, title: str = "ceo") -> list[str]:
     chars = list(text)
-    for p in [name_of(domain)] + PHRASES["ceo"]:
+    for p in [name_of(domain)] + PHRASES[title]:
         for s, e in find_words(text, p):
             for k in range(s, e):
                 chars[k] = "\x00"
@@ -318,8 +323,8 @@ def values_of(text: str, field: str, domain: str) -> list:
         return legal_name_values(text, domain)
     if field == "hq_city":
         return hq_values(text)
-    if field == "ceo":
-        return ceo_values(text, domain)
+    if field in ("ceo",) + TITLES:
+        return ceo_values(text, domain, field)
     if field == "founded_year":
         return founded_values(text)
     if field == "headcount_range":

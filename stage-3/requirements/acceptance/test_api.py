@@ -109,7 +109,8 @@ def test_new_dossier_before_first_ready(pworld):
     check_shape(b)
     assert b["state"] == "building" and b["researched_at"] is None
     assert all(f["status"] == "unknown" and f["value"] is None and f["citations"] == []
-               and f["candidates"] == [] for f in b["fields"].values())
+               and f["candidates"] == [] and f["true_from"] is None and f["learned_at"] is None
+               for f in b["fields"].values())
     assert b["dossier_id"] == j["dossier_id"]
     listed = ok_json(w.ada.get("/dossiers"))["dossiers"][0]
     assert listed["state"] == "building" and listed["legal_name"] is None

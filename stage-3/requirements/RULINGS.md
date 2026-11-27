@@ -1,4 +1,4 @@
-# RULINGS (stage 2: rulings 1-29 carried from stage 1 and still apply unless 30+ says otherwise; 30+ are new)
+# RULINGS (stage 3: rulings 1-55 carried from stages 1-2 and still apply unless 56+ says otherwise; 56+ are new)
 
 Ambiguities found in the specification, the reading the band adopts, and why. Tests encode
 these readings; a rule marked **T** is asserted, **L** means tests are deliberately lenient.
@@ -201,3 +201,87 @@ these readings; a rule marked **T** is asserted, **L** means tests are deliberat
     status, citations, order and `selected` follow the rule. They do **not** demand candidates from pages the export
     never mentions, and a stage-1 dossier therefore imports as `known` wherever stage 1 kept one value. The hidden
     upgrade check may expect more than this export allows; that cannot be satisfied by the stage-2 service alone.
+
+## Stage 3 (56+)
+
+56. **The corpus's `true_from` is the `Effective` header, verbatim (T).** The mock writes a page's `true_from` as the line
+    `Effective: <value>` and `published_at` as `Published: <value>`, both verbatim, so tests can serve invalid ones. A
+    "valid `Effective` line" is `YYYY-MM-DD`, four-two-two digits, that is a real calendar date (2026-02-30 and 2023-02-29 are
+    not; 2024-02-29 is; `2026-3-1` and a timestamp are not). An invalid line is as if absent and `Published` decides.
+57. **`published_at` to a date (T).** A valid RFC 3339 `Published` (explicit offset) converted to UTC, date part
+    (`2026-02-10T23:30:00-05:00` is 2026-02-11). An invalid `Published` counts as no `Published`: `true_from` null.
+58. **Selected value's `learned_at` (T).** "The time of the build that made it the selected value" is read as the build
+    that added the field's latest history entry (the build that changed the selected value to the value now selected). A
+    later build with the same selected value (candidates, citations, `true_from` different) leaves `learned_at`
+    unchanged while the field's `true_from` is the *current* selected candidate's; the history entry keeps the dates it was
+    made with. A value that disappears and comes back is learned again at the build that brings it back.
+59. **Candidate `learned_at` and the provider (T).** The identity (field/title, value, URL, provider) includes the provider,
+    which stage 2 lets the service choose among providers that served the text. Tests therefore compute the expected
+    `learned_at` from the candidate sets the service itself returned after each build (earliest ready build whose set held
+    the same (field, title, value, URL, provider)), and check `retrieved_at` = the build's time. They never demand a provider.
+60. **`as_of` strict form (T).** RFC 3339 `date-time` with seconds, `T` (or `Z`) and `+hh:mm`/`Z` offset, optional fraction.
+    Rejected with 422: no offset, a date alone, a number, an empty value, a space instead of `T`, an offset without colon is
+    not tested, month 13, hour 25, `2026-04-31`, `...T09:00Z` (no seconds). Valid but unusual forms (`Z`, fractions,
+    other offsets) are instants and compared as instants. An `as_of` equal to a build's time includes it.
+61. **`true_at` strict form (T).** `YYYY-MM-DD` that is a real date (leap days accepted, 2025-02-30 and `2025-6-1` 422); a
+    timestamp is not a date. Missing or empty is 422. `true_at` compares as a date with `true_from`; a version holds on the
+    date `true_from` itself.
+62. **What a build "gathers" (T for pages with candidates and research-cited pages).** Stage 2 already requires every page of
+    the evidence with a supported value to yield its candidates and a research-cited page to be read, so those URLs are
+    surely gathered. The stage-3 corpus therefore puts the "version with no candidates" on a page that is `searchable: false` and
+    cited by the research claim (meridian-ledger `/leadership`, epoch 3), never on a page whose reading a service may skip.
+    A URL not gathered by a later build keeps its versions (nothing ends them); tests assert this (S3-VA-3), including
+    that a vanished aggregator page still holds at `/values` while the dossier itself has no value from it.
+63. **Versions of one build per URL (T).** The model: ready builds with time <= `as_of` in build order; a version with
+    `true_from` t replaces earlier versions of its URL with `true_from` >= t (all of them when t is null); the latest
+    survivor ends on t. Equal times: the later build in build order. A version with null `true_from` holds on no date.
+    Authority/recency of a candidate at `true_at` is that of the candidate's own page version (`published_at`), exactly as in
+    a build.
+64. **`as_of` answers are immutable and exact (T).** The response equals the dossier right after that build (fields with
+    their candidates and both times, `researched_at`, `dossier_id`), with `state` `ready` and `spent_units` the total of all
+    builds (ready or failed) whose time is at or before `as_of`; tests compare the JSON equal, not just selected values.
+    `GET` without `as_of` after the last build equals `as_of` far in the future.
+65. **Executives (T).** Members are the titles that have candidates, ranked per title by the stage-2 rule (names by code point
+    as the last tiebreak); `candidates` are grouped cfo, coo, cto then rank order; status contested when any title has two or
+    more names (aggregator and own page); `true_from` null when any member's is null; `learned_at` of the field is that of
+    its latest history entry like any field (ruling 58). When the evidence for a title could be read from a fragment of a
+    sentence that Appendix A rejects as a whole (two names in one sentence), a fragment candidate is tolerated, never
+    required (as ruling 1/2); the stage-3 corpus keeps the timeline companies free of such sentences so selection is exact;
+    paxton-quay.test carries them and is checked tolerantly (candidates between "whole-sentence" and "fragment" sets).
+66. **Typing of executives and equal dates (T).** "On or before" includes equal dates: a new value whose `true_from` equals the
+    earlier one is a `correction` (both non-null). An executives entry is typed by the titles that differ (one side has the
+    title, or names differ); a title that appears or disappears is never a correction. All members of one page share the page's
+    `true_from`; a title read from another page has that page's.
+67. **Imported dates (L for the Effective line).** The stage-1/stage-2 exports are implementation-defined. The tests demand:
+    imported candidates `learned_at` = `retrieved_at`; the history initial entry `learned_at` = `researched_at`; `true_from`
+    either null (stage-1; the spec says "null unless the exported state records the dates") or equal to the date of the candidate's
+    recorded `published_at`/the page's Effective; for a stage-2 export (which records the builds' served candidates) each candidate's
+    `true_from` is the date given by the page's Effective (if the export kept the line) or by its Published, and null when neither.
+    Tests accept either reading where the page has both lines, and use only pages and `true_at` values at which both readings agree for
+    the `/values` cases.
+68. **An `as_of` response of an imported older stage-2 build (L).** The spec says an `as_of` response "takes each field's `learned_at`
+    and `true_from` from that history" for imported state, and the imported history has one entry per field with `learned_at`
+    = `researched_at` (the last build). Tests demand that rule only for `as_of` at the last imported build's time; for earlier
+    imported builds they demand value, status, citations, candidates, `researched_at`, `spent_units` as the stage-2 service had them,
+    and candidate `learned_at` per the first-build rule.
+69. **First build after import (T).** The comparison is with the imported selected values (and their `true_from`): for stage-1 and
+    stage-2 state `executives` was unknown, so the first build with a value adds a `change` (never `initial`, the dossier's first
+    ready build being the imported one).
+70. **Restarts need an external kill (T via RESTART_CMD).** The black-box harness cannot stop a container; `run.sh` provides
+    `RESTART_CMD` (`docker kill` = SIGKILL, then `docker start`, same container filesystem, fixed host port) and the tests wait for
+    `/health` themselves (<= 120 s). When `RESTART_CMD` is not set (e.g. `run_against.sh` on a bare process) the restart tests are
+    skipped and S3-RS-* stay open. The kill is made right after the last response (no settle time). "When no build is running" is
+    arranged by waiting for `ready`.
+71. **Clock after restart (T).** After a restart the next build's `researched_at` (no clock call between) is the clock value that
+    was set before the stop. The clock at reset (fixture `now`) or at `POST /_test/clock` is the last value set; the system clock
+    does not advance it (stage 1 CK-2).
+72. **Concurrency (T).** "Same results as one at a time in some order": 6 dossiers x 8 simultaneous refreshes with readers on every
+    new endpoint; checked: one build per dossier (exactly one domain-query search each), each history list grows by one, the feed has exactly
+    one entry per dossier, seq unique and increasing, every feed page seen by a reader is a consistent prefix of the final feed.
+73. **Not testable black-box (recorded).** S3-RS-7 (state on the container filesystem, no volume): the harness runs the container without
+    a volume, and the restart tests are the evidence; a Reviewer inspection of the Dockerfile/state location backs it. S3-DEP-1:
+    run.sh builds the stage-3 image alone and RUN.md is read by the Reviewer.
+74. **Selection rule carried (T).** All stage-1 and stage-2 acceptance tests are carried forward and adapted only where the seventh
+    field and the two times change an exact shape (`UNKNOWN` field shape, "all fields known" restricted to the six fields). The
+    carried tests ignore `executives` except where a corpus company has executive sentences (checked tolerantly in `check_exec_candidates`).
+

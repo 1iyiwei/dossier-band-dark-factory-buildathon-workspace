@@ -9,7 +9,7 @@ import httpx
 import pytest
 
 import s2model as m
-from conftest import (BASE, MOCK, MOCK_TOKEN, FIELDS, Api, Mock, World, assert_status,
+from conftest import (UNKNOWN, six, BASE, MOCK, MOCK_TOKEN, FIELDS, Api, Mock, World, assert_status,
                       check_build, check_candidates, check_citations, check_shape, domain_searches,
                       new_key, ok_json, parse_ts, pmap, served_index, successful, CORPUS_S2)
 from test_builds import check_cost_rules, cost_of
@@ -129,13 +129,12 @@ def test_the_same_value_on_several_pages_is_known_and_cites_each(s2):
 def test_a_field_without_candidates_is_unknown_with_empty_candidates(s2):
     """S2-ST-3 S2-CA-7 (driftwood has no legal name and no city anywhere)"""
     for name in ("legal_name", "hq_city"):
-        assert s2.bodies[D]["fields"][name] == {"value": None, "status": "unknown",
-                                                "citations": [], "candidates": []}
+        assert s2.bodies[D]["fields"][name] == UNKNOWN
 
 
 def test_contested_field_keeps_its_value_and_only_its_values_citations(s2):
     """S2-ST-2 S2-SEL-6 (every ashgrove field is contested: citations are the selected value's candidates in rank order)"""
-    for name, fld in s2.bodies[A]["fields"].items():
+    for name, fld in six(s2.bodies[A]["fields"]).items():          # executives are not one of the six fields
         assert fld["status"] == "contested" and fld["value"] is not None
         sel = [c for c in fld["candidates"] if c["value"] == fld["value"]]
         assert [c["url"] for c in fld["citations"]] == [c["url"] for c in sel]
@@ -175,7 +174,7 @@ def test_kind_and_publication_time_come_from_the_header_with_defaults(s2):
     assert f["value"] == "Gus Hill" and f["status"] == "contested"
     for fld in s2.bodies[C]["fields"].values():
         if fld is not f:
-            assert fld == {"value": None, "status": "unknown", "citations": [], "candidates": []}
+            assert fld == UNKNOWN
 
 
 def test_candidates_are_the_last_ready_builds_and_retrieved_at_is_its_time(pworld):

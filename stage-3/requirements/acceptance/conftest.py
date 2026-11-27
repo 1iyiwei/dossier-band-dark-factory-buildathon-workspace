@@ -1,4 +1,4 @@
-"""Black-box acceptance helpers for Dossier stage 2 (stage-1 helpers carried forward).
+"""Black-box acceptance helpers for Dossier stage 3 (stage-1/2 helpers carried forward).
 
 Environment:
   BASE_URL          the service under test (required)
@@ -6,7 +6,10 @@ Environment:
   MOCK_ADMIN_TOKEN  admin token of that mock (default local-admin)
   BASE_URL_2        optional second, fresh instance of the same image (cross-instance import)
   BASE_URL_S1       optional running *stage-1* service (the team's final stage-1 image) wired to the
-                    same mock: enables the stage-1 -> stage-2 export/import upgrade tests
+                    same mock: enables the stage-1 -> stage-3 export/import upgrade tests
+  BASE_URL_S2       optional running *stage-2* service (final stage-2 image), same mock: stage-2 -> stage-3
+  RESTART_CMD       optional shell command that kills the service under test abruptly (SIGKILL), starts it
+                    again on the same container filesystem and returns once it is healthy again (Restarts)
   HEADED=1          show the browser in the UI tests
 """
 from __future__ import annotations
@@ -27,6 +30,7 @@ import pytest
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import oracle as o  # noqa: E402
 import s2model as m  # noqa: E402
+import s3model as s3  # noqa: E402
 
 HERE = pathlib.Path(__file__).parent
 BASE = os.environ.get("BASE_URL", "").rstrip("/")
@@ -34,10 +38,15 @@ MOCK = os.environ.get("MOCK_URL", "").rstrip("/")
 MOCK_TOKEN = os.environ.get("MOCK_ADMIN_TOKEN", "local-admin")
 BASE2 = os.environ.get("BASE_URL_2", "").rstrip("/")
 BASE_S1 = os.environ.get("BASE_URL_S1", "").rstrip("/")
+BASE_S2 = os.environ.get("BASE_URL_S2", "").rstrip("/")
+RESTART_CMD = os.environ.get("RESTART_CMD", "")
 CORPUS_S2 = m.load()
 NOW0 = "2026-03-01T09:00:00+00:00"
 PW = "correct horse"
 FIELDS = o.FIELDS
+ALL_FIELDS = FIELDS + ("executives",)
+UNKNOWN = {"value": None, "status": "unknown", "true_from": None, "learned_at": None,
+           "citations": [], "candidates": []}
 EXPECT = json.loads((HERE / "expectations.json").read_text(encoding="utf-8"))
 RFC3339 = re.compile(r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(Z|[+-]\d\d:\d\d)$")
 NOBODY = object()
@@ -251,9 +260,9 @@ def check_shape(b):
         and b["spent_units"] >= 0
     if b["researched_at"] is not None:
         parse_ts(b["researched_at"])
-    assert list(sorted(b["fields"])) == sorted(FIELDS), list(b["fields"])
+    assert list(b["fields"]) == list(ALL_FIELDS), list(b["fields"])     # six fields, then executives
     ra = parse_ts(b["researched_at"]) if b["researched_at"] else None
-    for name, fld in b["fields"].items():
+    for name, fld in six(b["fields"]).items():
         assert set(fld) >= {"value", "status", "citations", "candidates"}, (name, sorted(fld))
         assert fld["status"] in ("known", "contested", "unknown"), (name, fld["status"])
         if fld["value"] is None:
@@ -272,6 +281,13 @@ def check_shape(b):
             assert set(c) >= {"url", "excerpt", "provider"}, c
             assert c["provider"] in m.PROVIDERS
         m.check_field_consistency(name, fld, retrieved_at=ra)
+        s3.check_field_times(name, fld, retrieved_at=ra)
+    s3.check_exec_field(b["fields"]["executives"], retrieved_at=ra)
+
+
+def six(fields):
+    """the six fields of stage-1 §4 of a `fields` object (without `executives`)"""
+    return {k: v for k, v in fields.items() if k in FIELDS}
 
 
 def served_index(calls):
@@ -317,11 +333,18 @@ def check_citation(domain, field, value, c, idx, epoch=None):
 
 def check_citations(b, calls_all, epoch=None):
     idx = served_index(calls_all)
-    for name, fld in b["fields"].items():
+    for name, fld in six(b["fields"]).items():
         for c in fld["citations"]:
             check_citation(b["domain"], name, fld["value"], c, idx, epoch)
         for c in fld["candidates"]:
             check_citation(b["domain"], name, c["value"], c, idx, epoch)
+    ex = b["fields"]["executives"]                 # a candidate of executives is a candidate of one title
+    for c in ex["candidates"]:
+        check_citation(b["domain"], c["title"], c["value"], c, idx, epoch)
+    for c in ex["citations"]:
+        mine = [x for x in ex["candidates"] if (x["url"], x["excerpt"], x["provider"]) ==
+                (c["url"], c["excerpt"], c["provider"])]
+        assert mine, f"executives citation {c} is not a candidate"
 
 
 def check_candidates(b, epoch=0, exact=True):
@@ -332,7 +355,8 @@ def check_candidates(b, epoch=0, exact=True):
     if b["state"] != "ready" and b["researched_at"] is None:
         return
     exp, info = m.expected_candidates(dom, epoch, CORPUS_S2)
-    for name, fld in b["fields"].items():
+    check_exec_candidates(b, epoch)
+    for name, fld in six(b["fields"]).items():
         got = {(c["url"], c["value"]) for c in fld["candidates"]}
         must, may = exp[name]["must"], exp[name]["may"]
         assert must <= got, f"{dom} {name}: candidates missing {sorted(must - got, key=str)}"
@@ -352,6 +376,27 @@ def check_candidates(b, epoch=0, exact=True):
             assert [(c["url"], c["value"]) for c in fld["candidates"]] == \
                 [(c["url"], c["value"]) for c in d["order"]], \
                 f"{dom} {name}: candidate order {[(c['url'], c['value']) for c in fld['candidates']]}"
+
+
+def check_exec_candidates(b, epoch=0):
+    """executives candidates: every title's supported names (once per page) and nothing the evidence
+    does not support (a fragment of a sentence may support a name: tolerated, never required)."""
+    dom = b["domain"]
+    res, info, _ = s3.expected_all(dom, epoch, CORPUS_S2)
+    cands = b["fields"]["executives"]["candidates"]
+    for t in s3.TITLES:
+        got = {(c["url"], c["value"]) for c in cands if c["title"] == t}
+        must, may = res[t]["must"], res[t]["may"]
+        assert must <= got, f"{dom} executives {t}: candidates missing {sorted(must - got, key=str)}"
+        assert got <= must | may, f"{dom} executives {t}: unsupported candidates {sorted(got - must - may, key=str)}"
+    for c in cands:
+        kind, pub, tf = info[c["url"]]
+        assert c["kind"] == kind and (m.parse_rfc3339(c["published_at"]) == pub if pub else c["published_at"] is None)
+        assert c["true_from"] == tf, f"{dom} {c['title']} {c['url']}: true_from {c['true_from']!r} != {tf!r}"
+    for name, fld in six(b["fields"]).items():
+        for c in fld["candidates"]:
+            tf = info[c["url"]][2] if c["url"] in info else None
+            assert c["true_from"] == tf, f"{dom} {name} {c['url']}: true_from {c['true_from']!r} != {tf!r}"
 
 
 def check_expect(b, epoch=0):

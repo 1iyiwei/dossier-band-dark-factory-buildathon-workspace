@@ -15,12 +15,14 @@ PUB = "2026-02-01T00:00:00Z"
 
 
 def page(domain, path, text, *, kind="own", epochs=(0,), searchable=True, facts=None,
-         title=None, host=None, canonical=None, first=None, pub=PUB, static=None, url=None):
+         title=None, host=None, canonical=None, first=None, pub=PUB, static=None, url=None,
+         true_from=None):
     """`pub`/`kind` are written verbatim into the Published/Kind header (None omits the line);
-    `static` is what search/extract serve when it differs from what a browser shows (text)."""
+    `static` is what search/extract serve when it differs from what a browser shows (text).
+    `true_from` is written verbatim into the Effective header (None omits the line)."""
     host = host or domain
     p = {"url": url or f"https://{host}/{path}", "kind": kind, "epochs": list(epochs),
-         "searchable": searchable, "published_at": pub, "true_from": None,
+         "searchable": searchable, "published_at": pub, "true_from": true_from,
          "title": title or f"{path} - {host}", "text": "\n".join(text),
          "facts": facts or {},
          "lineage": {"canonical": canonical, "first_published_by": first, "registrant": host}}
@@ -285,6 +287,152 @@ company(d, "Driftwood Games", [
          host="bizlistings-hub.test", pub="2026-02-03T00:00:00Z", title="Listing"),
     page(d, "team", ["Driftwood Games employs about 120 people."], pub=P1, title="Team"),
     page(d, "careers", ["Driftwood Games has 90 employees."], pub=P1, title="Careers"),
+])
+
+
+# ======================================================================= stage 3 companies
+# Change over time (stage-3.md). Written from stage-3.md alone. Every sentence is whole-sentence
+# supported (no fragment-only candidates), so tests can compute exact expectations (s3model.py).
+# Epochs are the "web changing between builds"; the tests set the clock and the epoch before each build.
+
+# ---- M: meridian-ledger.test: the timeline company (five epochs; see test_s3_history.py)
+d = "meridian-ledger.test"
+N3 = "Meridian Ledger"
+LEAD = f"https://{d}/leadership"
+
+
+def lead(ep, text, tf, pub):
+    return page(d, "leadership", [text], epochs=(ep,), searchable=False, true_from=tf, pub=pub,
+                title="Leadership")
+
+
+L0 = "Dana Ruiz has led Meridian Ledger as chief executive since 2021."
+L1 = "Lee Park has led Meridian Ledger as chief executive since 2026."
+L2 = "Sam Ortiz is the chief executive of Meridian Ledger."
+L3 = "Meridian Ledger is led by its board."
+
+
+def exec_page(ep, lines, tf, pub):
+    return page(d, "exec", lines, epochs=(ep,), true_from=tf, pub=pub, title="Executive team")
+
+
+CFO = "Ana Silva is the chief financial officer of Meridian Ledger."
+COO = "Dee Hart is the chief operating officer of Meridian Ledger."
+company(d, N3, [
+    lead(0, L0, "2021-04-01", "2026-01-10T00:00:00Z"),
+    lead(1, L1, "2026-03-20", "2026-03-25T00:00:00Z"),
+    lead(2, L2, "2026-01-01", "2026-04-05T00:00:00Z"),
+    lead(3, L3, "2026-05-01", "2026-05-02T00:00:00Z"),
+    lead(4, L0, None, None),                                    # no Effective, no Published: true_from null
+    # a stable fact: same value in every build; its Effective moves in epoch 2 (same value: no entry)
+    page(d, "team", ["Meridian Ledger employs about 120 people."], epochs=(0, 1, 3, 4),
+         true_from="2020-01-01", pub="2026-01-10T00:00:00Z", title="Team"),
+    page(d, "team", ["Meridian Ledger employs about 120 people."], epochs=(2,),
+         true_from="2019-06-01", pub="2026-04-05T00:00:00Z", title="Team"),
+    # a field that is unknown until epoch 2
+    page(d, "history", ["Meridian Ledger was founded in 2003."], epochs=(2, 3, 4),
+         true_from="2026-04-01", pub="2026-04-05T00:00:00Z", title="History"),
+    # executives
+    exec_page(0, [CFO, "Meridian Ledger CTO: Ben Okafor."], "2025-09-01", "2026-01-10T00:00:00Z"),
+    exec_page(1, [CFO, "Meridian Ledger CTO: Cho Min."], "2026-03-20", "2026-03-25T00:00:00Z"),
+    exec_page(2, [CFO, "Meridian Ledger CTO: Cho Min.", COO], "2025-12-01", "2026-04-05T00:00:00Z"),
+    exec_page(3, [CFO, "Meridian Ledger CTO: Eli Novak.", COO], "2025-10-01", "2026-05-02T00:00:00Z"),
+    exec_page(4, [CFO, "Meridian Ledger CTO: Fay Quinn."], "2025-09-01", "2026-06-01T00:00:00Z"),
+    # an aggregator that restates other sources; only served in epochs 0-2
+    page("bizlistings-hub.test", "meridian-ledger",
+         ["Meridian Ledger CEO: Pat Lee.", "Meridian Ledger CFO: Gus Hall."],
+         kind="aggregator", epochs=(0, 1, 2), host="bizlistings-hub.test", true_from="2022-01-01",
+         pub="2026-02-20T00:00:00Z", title="Meridian Ledger company data"),
+], {"nimble": {"0": [{"field": "ceo", "value": "Dana Ruiz", "url": LEAD, "excerpt": L0}],
+               "1": [{"field": "ceo", "value": "Lee Park", "url": LEAD, "excerpt": L1}],
+               "2": [{"field": "ceo", "value": "Sam Ortiz", "url": LEAD, "excerpt": L2}],
+               "3": [{"field": "ceo", "value": "Dana Ruiz", "url": LEAD, "excerpt": L3}],
+               "4": [{"field": "ceo", "value": "Dana Ruiz", "url": LEAD, "excerpt": L0}]}})
+
+# ---- P: paxton-quay.test: executive sentences that must not yield a person (tolerant check: fragments)
+d = "paxton-quay.test"
+company(d, "Paxton Quay", [
+    page(d, "people", ["Paxton Quay CEO Dana Reyes and CFO Tom Wells joined in 2019.",
+                       "Paxton Quay's chief financial officer is Iris Holt.",
+                       "Former CFO Walt Moss left Paxton Quay in 2020.",
+                       "Paxton Quay will become a public company and its COO Sara Lund will lead the listing.",
+                       "Paxton Quay is advised by Brightline Partners, whose CFO is Tom Wells.",
+                       "Paxton Quay COO: Rhea Cho.",
+                       "Paxton Quay CTO: Yan Li Wu."], true_from="2025-02-01", pub="2026-02-01T00:00:00Z",
+         title="People"),
+    page("bizlistings-hub.test", "paxton-quay", ["Paxton Quay CFO: Walt Moss."], kind="aggregator",
+         host="bizlistings-hub.test", true_from="2018-01-01", pub="2026-02-25T00:00:00Z",
+         title="Paxton Quay company data"),
+])
+
+# ---- T: ember-dates.test: true_from of a page (Effective, Published, their defaults and invalid forms)
+d = "ember-dates.test"
+company(d, "Ember Dates", [
+    page(d, "a", ["Ember Dates was founded in 2001."], true_from="2026-01-05", pub="2026-02-01T00:00:00Z"),
+    page(d, "b", ["Ember Dates was founded in 2002."], pub="2026-02-10T23:30:00-05:00"),
+    page(d, "c", ["Ember Dates was founded in 2003."], true_from="2026-02-30", pub="2026-03-01T00:30:00+02:00"),
+    page(d, "d", ["Ember Dates was founded in 2004."], true_from="not a date", pub=None),
+    page(d, "e", ["Ember Dates was founded in 2005."], pub="garbage"),
+    page(d, "f", ["Ember Dates was founded in 2006."], true_from="2026-3-1", pub="2026-03-05T00:00:00Z"),
+    page(d, "g", ["Ember Dates was founded in 2007."], true_from="2024-02-29", pub=None),
+    page(d, "h", ["Ember Dates was founded in 2008."], true_from="2023-02-29", pub="2026-03-09T12:00:00Z"),
+    page(d, "i", ["Ember Dates was founded in 2009."], true_from="2026-01-05T00:00:00Z",
+         pub="2026-03-10T00:00:00Z"),
+    page(d, "j", ["Ember Dates was founded in 2010."], true_from="2026-04-02", pub="2026-04-01T23:59:59.5-12:00"),
+])
+
+# ---- W: tally-wharf.test: sources that restate, republish and correct themselves
+d = "tally-wharf.test"
+company(d, "Tally Wharf", [
+    page(d, "about", ["Tally Wharf CEO: Nia Cole."], epochs=(0,), true_from="2022-03-01",
+         pub="2022-03-02T00:00:00Z", title="About"),
+    page(d, "about", ["Tally Wharf CEO: Nia Cole."], epochs=(1,), true_from="2022-03-01",
+         pub="2026-03-02T00:00:00Z", title="About (republished)"),
+    page(d, "about", ["Tally Wharf CEO: Joe Hart."], epochs=(2,), true_from="2021-06-01",
+         pub="2026-04-01T00:00:00Z", title="About"),
+    page("wirecast-daily.test", "tally-raise", ["Tally Wharf has raised $12M in total funding."], kind="news",
+         epochs=(0,), host="wirecast-daily.test", true_from="2024-01-01", pub="2024-01-02T00:00:00Z"),
+    page("wirecast-daily.test", "tally-raise", ["Tally Wharf has raised $30M in total funding."], kind="news",
+         epochs=(1, 2), host="wirecast-daily.test", true_from="2026-03-01", pub="2026-03-05T00:00:00Z"),
+    # stale restatement: newer Published than the company's own page, older facts, lower authority
+    page("bizlistings-hub.test", "tally-wharf", ["Tally Wharf CEO: Rob Dunn.",
+                                                  "Tally Wharf raised $2M in its seed round."],
+         kind="aggregator", epochs=(0, 1, 2), host="bizlistings-hub.test", pub="2026-03-10T00:00:00Z",
+         title="Tally Wharf company data"),
+])
+
+# ---- F: fleet-*.test: six small companies whose CEO changes between epoch 0 and 1 (concurrency)
+FLEET = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot"]
+PEOPLE = [("Ola Voss", "Ines Roca"), ("Mia Tran", "Noah Pike"), ("Tess Ward", "Ravi Shah"),
+          ("Omar Bell", "Lena Fox"), ("Kai Lund", "Zoe Marsh"), ("Ed Dunn", "Uma Reed")]
+for nm, (p0, p1) in zip(FLEET, PEOPLE):
+    d = f"fleet-{nm}.test"
+    Nm = f"Fleet {nm.capitalize()}"
+    company(d, Nm, [
+        page(d, "lead", [f"{Nm} CEO: {p0}."], epochs=(0,), true_from="2024-01-01", pub="2026-01-10T00:00:00Z"),
+        page(d, "lead", [f"{Nm} CEO: {p1}."], epochs=(1,), true_from="2026-03-01", pub="2026-03-10T00:00:00Z"),
+        page(d, "about", [f"{Nm} is headquartered in Lisbon."], epochs=(0, 1), true_from="2024-01-01",
+             pub="2026-01-10T00:00:00Z"),
+    ])
+
+# ---- K: keystone-yards.test: what a stage-1/stage-2 service built and a stage-3 service imports
+d = "keystone-yards.test"
+KS = "Keystone Yards"
+company(d, KS, [
+    page(d, "about", [f"{KS} is headquartered in Gdansk.", f"{KS} was founded in 1995.",
+                      f"The legal name of {KS} is {KS} GmbH."], epochs=(0,),
+         true_from="2026-01-15", pub="2026-01-20T00:00:00Z", title="About"),
+    page(d, "about", [f"{KS} is headquartered in Rotterdam.", f"{KS} was founded in 1995.",
+                      f"The legal name of {KS} is {KS} GmbH."], epochs=(1,),
+         true_from="2026-02-10", pub="2026-02-11T00:00:00Z", title="About"),
+    page(d, "leadership", [f"{KS} CEO: Ulla Berg."], epochs=(0, 1), pub="2026-01-20T00:00:00Z",
+         title="Leadership"),
+    page(d, "team", [f"{KS} employs about 80 people."], epochs=(0, 1), pub="2026-01-05T22:00:00-03:00",
+         title="Team"),
+    page("wirecast-daily.test", "keystone-raise", [f"{KS} has raised $7M in funding."], kind="news",
+         epochs=(0, 1), host="wirecast-daily.test", pub=None, title="Keystone raise"),
+    page(d, "exec", [f"{KS} CTO: Per Lund."], epochs=(1,), true_from="2026-02-10", pub="2026-02-11T00:00:00Z",
+         title="Executives"),
 ])
 
 

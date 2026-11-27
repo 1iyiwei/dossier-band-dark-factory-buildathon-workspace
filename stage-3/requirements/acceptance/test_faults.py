@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from conftest import (BASE, Api, EXPECT, FIELDS, assert_status, check_build, check_citations,
+from conftest import (UNKNOWN, six, BASE, Api, EXPECT, FIELDS, assert_status, check_build, check_citations,
                       check_expect, check_shape, domain_searches, err, new_key, ok_json, successful)
 from test_builds import check_cost_rules, cost_of
 
@@ -12,8 +12,7 @@ D = "northwind-optics.test"
 
 
 def unknown_all(b):
-    return all(f == {"value": None, "status": "unknown", "citations": [], "candidates": []}
-               for f in b["fields"].values())
+    return all(f == UNKNOWN for f in b["fields"].values())
 
 
 def test_all_providers_failing_ends_failed_and_free(pworld):
@@ -61,8 +60,8 @@ def test_nimble_alone_suffices_when_tavily_fails(pworld):
     b, calls = w.build(w.ada, "tidewell-pharma.test")
     assert b["state"] == "ready"
     check_build(b, w.mock.log())
-    assert all(f["status"] == "known" for f in b["fields"].values())
-    for f in b["fields"].values():
+    assert all(f["status"] == "known" for f in six(b["fields"]).values())
+    for f in six(b["fields"]).values():
         assert {c["provider"] for c in f["citations"]} == {"nimble"}
     assert b["spent_units"] == cost_of(calls) <= 80
 
@@ -134,7 +133,7 @@ def test_slow_providers_are_waited_for_and_post_returns_at_once(pworld):
     assert cost_of(calls) <= 80
     assert b["spent_units"] == cost_of(calls), "a call that timed out still costs its units"
     assert b["state"] == "ready", b["state"]
-    assert all(f["status"] == "known" for f in b["fields"].values()), \
+    assert all(f["status"] == "known" for f in six(b["fields"]).values()), \
         {n: (f["status"], f["value"]) for n, f in b["fields"].items()}
 
 

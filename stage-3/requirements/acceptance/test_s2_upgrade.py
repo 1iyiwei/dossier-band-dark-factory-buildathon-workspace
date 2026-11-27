@@ -13,7 +13,7 @@ import pytest
 
 import oracle as o
 import s2model as m
-from conftest import (BASE, BASE_S1, FIELDS, MOCK, MOCK_TOKEN, NOW0, ADA, BOB, Api, Mock, PW,
+from conftest import (UNKNOWN, six, BASE, BASE_S1, FIELDS, MOCK, MOCK_TOKEN, NOW0, ADA, BOB, Api, Mock, PW,
                       assert_status, err, fixture, new_key, ok_json, parse_ts, CORPUS_S2)
 
 DOMS = ["northwind-optics.test", "tidewell-pharma.test", "bluefin-marine.test"]
@@ -168,8 +168,7 @@ def test_a_dossier_that_never_completed_is_failed_and_unknown(up):
     """S2-UP-9 (a stage-1 dossier whose build failed has no candidates)"""
     b = ok_json(up.ada2.get(f"/dossiers/{FAILED}"))
     assert b["state"] == "failed" and b["researched_at"] is None
-    assert all(f == {"value": None, "status": "unknown", "citations": [], "candidates": []}
-               for f in b["fields"].values())
+    assert all(f == UNKNOWN for f in b["fields"].values())
 
 
 def test_the_next_build_replaces_the_imported_candidates(up):

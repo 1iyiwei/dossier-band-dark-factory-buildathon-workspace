@@ -230,7 +230,8 @@ def test_export_taken_during_a_build_holds_the_dossier_as_before(pworld):
     b = w.dossier(w.ada, D1)
     assert b["state"] == "failed" and b["researched_at"] is None
     assert all(f["status"] == "unknown" and f["value"] is None and f["citations"] == []
-               and f["candidates"] == [] for f in b["fields"].values())
+               and f["candidates"] == [] and f["true_from"] is None and f["learned_at"] is None
+               for f in b["fields"].values())
     # the dossier is usable: refresh builds it
     b2, _ = w.refresh(w.ada, D1)
     assert b2["state"] == "ready" and b2["dossier_id"] == b["dossier_id"]

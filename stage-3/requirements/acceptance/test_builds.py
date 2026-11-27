@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from conftest import (EXPECT, FIELDS, check_build, check_expect, check_shape, domain_searches,
+from conftest import (UNKNOWN, six, EXPECT, FIELDS, check_build, check_expect, check_shape, domain_searches,
                       err, new_key, ok_json, parse_ts, served_index, successful, assert_status,
                       check_citations)
 
@@ -72,8 +72,7 @@ def test_research_claims_that_the_excerpt_does_not_support_are_not_asserted(pwor
     w = pworld
     b, _ = w.build(w.ada, "kestrel-freight.test")
     for f in ("headcount_range", "hq_city"):
-        assert b["fields"][f] == {"value": None, "status": "unknown", "citations": [],
-                                  "candidates": []}, f
+        assert b["fields"][f] == UNKNOWN, f
 
 
 def test_header_facts_are_not_evidence(pworld):

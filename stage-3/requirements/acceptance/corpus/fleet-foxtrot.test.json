@@ -1,0 +1,64 @@
+{
+ "domain": "fleet-foxtrot.test",
+ "names": [
+  "Fleet Foxtrot"
+ ],
+ "pages": [
+  {
+   "url": "https://fleet-foxtrot.test/lead",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-10T00:00:00Z",
+   "true_from": "2024-01-01",
+   "title": "lead - fleet-foxtrot.test",
+   "text": "Fleet Foxtrot CEO: Ed Dunn.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "fleet-foxtrot.test"
+   }
+  },
+  {
+   "url": "https://fleet-foxtrot.test/lead",
+   "kind": "own",
+   "epochs": [
+    1
+   ],
+   "searchable": true,
+   "published_at": "2026-03-10T00:00:00Z",
+   "true_from": "2026-03-01",
+   "title": "lead - fleet-foxtrot.test",
+   "text": "Fleet Foxtrot CEO: Uma Reed.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "fleet-foxtrot.test"
+   }
+  },
+  {
+   "url": "https://fleet-foxtrot.test/about",
+   "kind": "own",
+   "epochs": [
+    0,
+    1
+   ],
+   "searchable": true,
+   "published_at": "2026-01-10T00:00:00Z",
+   "true_from": "2024-01-01",
+   "title": "about - fleet-foxtrot.test",
+   "text": "Fleet Foxtrot is headquartered in Lisbon.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "fleet-foxtrot.test"
+   }
+  }
+ ],
+ "research": {}
+}
