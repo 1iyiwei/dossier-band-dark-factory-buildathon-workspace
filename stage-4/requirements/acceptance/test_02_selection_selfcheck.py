@@ -7,7 +7,7 @@ import s2model as m
 
 def cand(value, url="https://x.test/a", kind="own", pub=None, provider="nimble"):
     return {"value": value, "url": url, "excerpt": "e", "provider": provider, "kind": kind,
-            "published_at": pub}
+            "published_at": pub, "origin": "x.test"}
 
 
 def order(*cs):
@@ -64,7 +64,12 @@ def test_consistency_checker_rejects_wrong_selection_and_order():
 def test_page_kind_and_published_defaults():
     """AX-7"""
     k = lambda kind, url: m.page_kind(kind, url, "acme.test")
-    assert k("news", "https://acme.test/x") == "news" and k("own", "https://other.test/x") == "own"
+    assert k("news", "https://acme.test/x") == "news" and k("own", "https://other.test/x") == "aggregator"
+    # stage 4 (Own pages): `own` only when the registrant is the company's domain (default: the host of the URL)
+    kr = lambda kind, url, reg: m.page_kind(kind, url, "acme.test", reg)
+    assert kr("own", "https://other.test/x", "acme.test") == "own" and kr("own", "https://acme.test/x", "o.test") == "aggregator"
+    assert kr(None, "https://acme.test/x", "o.test") == "aggregator" and kr(None, "https://o.test/x", "acme.test") == "aggregator"
+    assert kr("news", "https://acme.test/x", "o.test") == "news" and kr("blog", "https://acme.test/x", "acme.test") == "own"
     assert k(None, "https://acme.test/x") == "own" and k(None, "https://www.acme.test/x") == "own"
     assert k(None, "https://blog.acme.test/x") == "aggregator" and k(None, "https://other.test/x") == "aggregator"
     assert k("blog", "https://acme.test/x") == "own" and k("blog", "https://other.test/x") == "aggregator"

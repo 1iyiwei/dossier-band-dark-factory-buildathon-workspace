@@ -111,24 +111,6 @@
     "first_published_by": null,
     "registrant": "kindred-mark.test"
    }
-  },
-  {
-   "url": "https://kindred-mark.test/partner-copy",
-   "kind": null,
-   "epochs": [
-    0
-   ],
-   "searchable": true,
-   "published_at": "2026-01-16T00:00:00Z",
-   "true_from": null,
-   "title": "Partner copy",
-   "text": "Kindred Mark CEO: Nia Ortiz.",
-   "facts": {},
-   "lineage": {
-    "canonical": null,
-    "first_published_by": null,
-    "registrant": "other-owner.test"
-   }
   }
  ],
  "research": {}

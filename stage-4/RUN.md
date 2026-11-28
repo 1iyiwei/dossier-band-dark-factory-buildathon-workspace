@@ -12,7 +12,7 @@ docker run --rm -p 8080:8080 \
 curl http://localhost:8080/health      # {"status": "ok"}
 ```
 
-State is written to a journal under `DATA_DIR` (default `/var/lib/dossier`, in the container's
+State (accounts, dossiers, batches, the change feed, idempotent responses and the clock) is written to a journal under `DATA_DIR` (default `/var/lib/dossier`, in the container's
 filesystem) before every request that changes it is answered, so it survives `docker stop`, `docker kill`
 and `docker start` of the same container. Give `-v dossier-data:/var/lib/dossier` to keep it beyond the container.
 
@@ -46,15 +46,32 @@ normalises to `acme.test`.
   checked with a plain extract (1 unit) and rendered only if the text it serves names the company. Page text is read only from the rendered extract, because a search or
   a plain extract can serve text a browser does not show. `gateway.py` retries a 429 after 1.05 s
   (up to three times); that waiting does not count toward the build's time window.
-* `dossier.py` is one dossier: its builds (each with the pages it gathered and the seven fields it left),
+* `dossier.py` is one dossier: its builds (each with the pages it gathered and the eight fields it left),
   the history of every field and the rule for what counts as a `change` or a `correction`. A finished
   build is applied in one step under the store lock, so each change is recorded, and numbered in the
   feed, exactly once. `versions.py` holds the page-version rules behind `GET /dossiers/{domain}/values`
   (`true_from` from `Effective`, else the UTC date of `Published`).
+* `lineage.py` reads a page's `Registrant`, `Canonical` and `First-Published-By` lines and derives its origin
+  (first publisher, else the original's origin through at most three `Canonical` hops, else the company for a
+  lookalike, else the registrant). `evidence.py` classifies kinds (a page is `own` only when its registrant is the
+  company) and settles origins when a build ends; `builder.py` looks up each original a copy's origin needs
+  with one plain extract (1 unit), keeping some budget back from the first round of page reads for that.
+  `corroboration.py` derives `corroborated_since` from the builds' views, so it is recomputed, not stored.
+* `investors` (`support.py` `investor_names`, `selection.py` `investors_of`) is a field whose value is the sorted
+  names that an own or filing page, or two origins, state; history and feed entries for it follow `dossier.py`.
+* `POST /batches` and `GET /batches/{id}` (`batches.py`, `store.py`): one batch is a budget shared by the first
+  builds of the domains that have no dossier yet. Every call a build makes reserves its cost with `ledger.py`
+  against the build's own 80 units and the batch's budget, and the store journals the reservation (a
+  light `progress` record, flushed but not forced to disk) before the call is made.
+  After a restart, a build found running is over: it ends `failed` (fields as they were) with every
+  reserved unit counted, in flight or not, for its dossier and its batch.
+* Provider errors (5xx, 429) cost nothing and are retried (`gateway.py`); a build ends `failed` only when no
+  call was answered.
 * `store.py` holds users, tokens, dossiers, the change feed, idempotency records and the export/import
   format; reset and import bump an epoch so a build still running cannot change what follows.
-  `codec.py` turns dossiers into their exported form and back. A stage-1 or stage-2 export is upgraded
-  there: it counts as one ready build at `researched_at` (stage 1: each cited excerpt becomes a candidate
+  `codec.py` turns dossiers into their exported form and back. A stage-3 export (no `investors`, no origins: a
+  candidate's origin is the host of its URL) is upgraded there, and its builds keep their pages. A stage-1 or
+  stage-2 export is upgraded there too: it counts as one ready build at `researched_at` (stage 1: each cited excerpt becomes a candidate
   for every field it supports; stage 2: its candidates are kept, and `true_from` follows from their
   publication time, since the export holds no `Effective` line), and its fields get one `initial` history entry.
 * `persistence.py` is the journal: one JSON line per batch of changed records, flushed with `fsync` before

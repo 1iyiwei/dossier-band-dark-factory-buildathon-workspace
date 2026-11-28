@@ -31,6 +31,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import oracle as o  # noqa: E402
 import s2model as m  # noqa: E402
 import s3model as s3  # noqa: E402
+import s4check as s4  # noqa: E402
 
 HERE = pathlib.Path(__file__).parent
 BASE = os.environ.get("BASE_URL", "").rstrip("/")
@@ -44,9 +45,9 @@ CORPUS_S2 = m.load()
 NOW0 = "2026-03-01T09:00:00+00:00"
 PW = "correct horse"
 FIELDS = o.FIELDS
-ALL_FIELDS = FIELDS + ("executives",)
+ALL_FIELDS = FIELDS + ("executives", "investors")
 UNKNOWN = {"value": None, "status": "unknown", "true_from": None, "learned_at": None,
-           "citations": [], "candidates": []}
+           "citations": [], "candidates": [], "origins": [], "corroborated": False, "corroborated_since": None}
 EXPECT = json.loads((HERE / "expectations.json").read_text(encoding="utf-8"))
 RFC3339 = re.compile(r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(Z|[+-]\d\d:\d\d)$")
 NOBODY = object()
@@ -260,7 +261,7 @@ def check_shape(b):
         and b["spent_units"] >= 0
     if b["researched_at"] is not None:
         parse_ts(b["researched_at"])
-    assert list(b["fields"]) == list(ALL_FIELDS), list(b["fields"])     # six fields, then executives
+    assert list(b["fields"]) == list(ALL_FIELDS), list(b["fields"])     # six fields, executives, investors
     ra = parse_ts(b["researched_at"]) if b["researched_at"] else None
     for name, fld in six(b["fields"]).items():
         assert set(fld) >= {"value", "status", "citations", "candidates"}, (name, sorted(fld))
@@ -282,7 +283,11 @@ def check_shape(b):
             assert c["provider"] in m.PROVIDERS
         m.check_field_consistency(name, fld, retrieved_at=ra)
         s3.check_field_times(name, fld, retrieved_at=ra)
+        s4.check_origin_keys(name, fld, members=s4.six_members(fld), latest=ra)
     s3.check_exec_field(b["fields"]["executives"], retrieved_at=ra)
+    s4.check_origin_keys("executives", b["fields"]["executives"], members=s4.exec_members(b["fields"]["executives"]),
+                         latest=ra)
+    s4.check_inv_field(b["fields"]["investors"], retrieved_at=ra)
 
 
 def six(fields):
@@ -338,6 +343,8 @@ def check_citations(b, calls_all, epoch=None):
             check_citation(b["domain"], name, fld["value"], c, idx, epoch)
         for c in fld["candidates"]:
             check_citation(b["domain"], name, c["value"], c, idx, epoch)
+    for c in b["fields"]["investors"]["candidates"]:    # an excerpt supports each investor name it contains
+        check_citation(b["domain"], "investors", c["value"], c, idx, epoch)
     ex = b["fields"]["executives"]                 # a candidate of executives is a candidate of one title
     for c in ex["candidates"]:
         check_citation(b["domain"], c["title"], c["value"], c, idx, epoch)
@@ -393,10 +400,23 @@ def check_exec_candidates(b, epoch=0):
         kind, pub, tf = info[c["url"]]
         assert c["kind"] == kind and (m.parse_rfc3339(c["published_at"]) == pub if pub else c["published_at"] is None)
         assert c["true_from"] == tf, f"{dom} {c['title']} {c['url']}: true_from {c['true_from']!r} != {tf!r}"
-    for name, fld in six(b["fields"]).items():
+    inv = b["fields"]["investors"]["candidates"]
+    got = {(c["url"], c["value"]) for c in inv}
+    must, may = res["investors"]["must"], res["investors"]["may"]
+    assert must <= got, f"{dom} investors: candidates missing {sorted(must - got)}"
+    assert got <= must | may, f"{dom} investors: unsupported candidates {sorted(got - must - may)}"
+    for c in inv:
+        kind, pub, tf = info[c["url"]]
+        assert c["kind"] == kind and c["true_from"] == tf, (dom, "investors", c["url"], c["kind"], kind, c["true_from"], tf)
+    origins, _ = s3.page_origins(dom, epoch, CORPUS_S2)
+    for name, fld in b["fields"].items():
         for c in fld["candidates"]:
-            tf = info[c["url"]][2] if c["url"] in info else None
-            assert c["true_from"] == tf, f"{dom} {name} {c['url']}: true_from {c['true_from']!r} != {tf!r}"
+            if name in FIELDS:
+                tf = info[c["url"]][2] if c["url"] in info else None
+                assert c["true_from"] == tf, f"{dom} {name} {c['url']}: true_from {c['true_from']!r} != {tf!r}"
+            if c["url"] in origins:
+                assert c["origin"] == origins[c["url"]], \
+                    f"{dom} {name} {c['url']}: origin {c['origin']!r} != {origins[c['url']]!r} (stage-4.md Origins)"
 
 
 def check_expect(b, epoch=0):

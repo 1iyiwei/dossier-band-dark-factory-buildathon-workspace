@@ -9,7 +9,7 @@ import s2model as m
 import s3model as s3
 from conftest import (BASE, CORPUS_S2, MOCK, MOCK_TOKEN, Api, Mock, World, assert_status, check_build, err,
                       fixture, new_key, ok_json, parse_ts)
-from s3util import M, SEVEN, T, STEPS, as_of, dt, run_timeline, spent_until, values
+from s3util import M, EIGHT, T, STEPS, as_of, dt, run_timeline, spent_until, values
 
 TW = "tally-wharf.test"
 TW_STEPS = [("0", 0, False), ("1", 1, False), ("2", 2, False)]
@@ -119,7 +119,7 @@ def test_as_of_before_the_first_ready_build_and_unknown_dossiers_are_404(tl):
     assert_status(as_of(tl.w.ada, M, T["0"]), 200)
     # without as_of the response is unchanged: the current dossier, with the seven fields
     now = tl.w.dossier(tl.w.ada, M)
-    assert list(now["fields"]) == list(SEVEN) and now["state"] == "ready"
+    assert list(now["fields"]) == list(EIGHT) and now["state"] == "ready"
     assert dt(now["researched_at"]) == dt(T["4"])
     err(Api(BASE).get(f"/dossiers/{M}"), 401, "unauthenticated")
 
@@ -142,9 +142,9 @@ def check_values(api, domain, builds, as_of_ts, true_at, tl_dossier=None):
     assert set(j) >= {"domain", "true_at", "as_of", "fields"}, sorted(j)
     assert j["domain"] == domain and j["true_at"] == true_at
     assert dt(j["as_of"]) == dt(as_of_ts), j["as_of"]
-    assert list(j["fields"]) == list(SEVEN)
+    assert list(j["fields"]) == list(EIGHT)
     want = s3.values_at(builds, dt(as_of_ts), true_at)
-    for name in SEVEN:
+    for name in EIGHT:
         f = j["fields"][name]
         assert set(f) >= {"value", "true_from", "citations"}, (name, sorted(f))
         w = want[name]
@@ -216,7 +216,7 @@ def test_values_default_as_of_is_the_clock_and_is_echoed(tl):
     assert dt(d["as_of"]) == dt(T["4"]), d["as_of"]
     e = ok_json(values(tl.w.ada, M, "2026-06-15", T["4"]))
     assert d["fields"] == e["fields"] and d["true_at"] == "2026-06-15"
-    for name in SEVEN:
+    for name in EIGHT:
         assert set(d["fields"][name]) >= {"value", "true_from", "citations"}
 
 

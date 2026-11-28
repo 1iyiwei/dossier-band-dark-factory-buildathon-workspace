@@ -47,7 +47,7 @@ def mk(t, **pages):
     pg = {}
     for url, (tf, name) in pages.items():
         cands = [{"value": name, "url": url, "excerpt": "", "provider": "nimble", "kind": "own",
-                  "published_at": "2026-01-01T00:00:00+00:00", "true_from": tf}] if name else []
+                  "published_at": "2026-01-01T00:00:00+00:00", "true_from": tf, "origin": "x.test"}] if name else []
         pg[url] = (tf, {"ceo": cands} if cands else {})
     return s3.Build(D(t), pg)
 
@@ -104,7 +104,7 @@ def test_meridian_timeline_model_matches_the_hand_derived_literals():
     assert {f: [e["type"] for e in es] for f, es in hist.items()} == {
         "legal_name": [], "hq_city": [], "founded_year": ["change"], "headcount_range": ["initial"], "funding_total": [],
         "ceo": ["initial", "change", "correction", "change", "change"],
-        "executives": ["initial", "change", "change", "correction", "change"]}
+        "executives": ["initial", "change", "change", "correction", "change"], "investors": []}
     assert [(b, f, t) for b, f, t, *_ in feed] == [
         (1, "ceo", "change"), (1, "executives", "change"), (2, "ceo", "correction"), (2, "founded_year", "change"),
         (2, "executives", "change"), (3, "ceo", "change"), (3, "executives", "correction"), (4, "ceo", "change"),

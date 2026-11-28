@@ -1,0 +1,81 @@
+{
+ "domain": "keen-lantern.test",
+ "names": [
+  "Keen Lantern"
+ ],
+ "pages": [
+  {
+   "url": "https://keen-lantern.test/about",
+   "kind": null,
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-10T00:00:00Z",
+   "true_from": null,
+   "title": "About",
+   "text": "Keen Lantern CEO: Nia Ortiz.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "keen-lantern.test"
+   }
+  },
+  {
+   "url": "https://keen-lantern.test/partner-copy",
+   "kind": null,
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-11T00:00:00Z",
+   "true_from": null,
+   "title": "Partner copy",
+   "text": "Keen Lantern CEO: Oz Pratt.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "other-owner.test"
+   }
+  },
+  {
+   "url": "https://syndicate-host.test/kl",
+   "kind": null,
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-12T00:00:00Z",
+   "true_from": null,
+   "title": "Syndicated",
+   "text": "Keen Lantern CEO: Pia Quinn.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "keen-lantern.test"
+   }
+  },
+  {
+   "url": "https://keen-lantern.test/listed",
+   "kind": "blog",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-13T00:00:00Z",
+   "true_from": null,
+   "title": "Listed",
+   "text": "Keen Lantern CEO: Rex Stone.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "keen-lantern.test"
+   }
+  }
+ ],
+ "research": {}
+}

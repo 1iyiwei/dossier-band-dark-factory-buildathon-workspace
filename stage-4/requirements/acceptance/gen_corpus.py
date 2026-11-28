@@ -516,8 +516,18 @@ company(d, KM, [
     lp(d, "partner-site.test", "km", [f"{KM} CEO: Lia Cruz."], kind="own", pub="2026-01-14T00:00:00Z",
        title="Partner"),
     page(d, "team", [f"{KM} CEO: Max Dunn."], kind=None, pub="2026-01-15T00:00:00Z", title="Team"),
-    page(d, "partner-copy", [f"{KM} CEO: Nia Ortiz."], kind=None, reg="other-owner.test",
-         pub="2026-01-16T00:00:00Z", title="Partner copy"),
+])
+
+# ---- N: keen-lantern.test: pages with no Kind line: the host rule, and `own` needs the registrant (Own pages)
+d = "keen-lantern.test"
+KL = "Keen Lantern"
+company(d, KL, [
+    page(d, "about", [f"{KL} CEO: Nia Ortiz."], kind=None, pub="2026-01-10T00:00:00Z", title="About"),
+    page(d, "partner-copy", [f"{KL} CEO: Oz Pratt."], kind=None, reg="other-owner.test",
+         pub="2026-01-11T00:00:00Z", title="Partner copy"),
+    lp(d, "syndicate-host.test", "kl", [f"{KL} CEO: Pia Quinn."], kind=None, reg=d, pub="2026-01-12T00:00:00Z",
+       title="Syndicated"),
+    page(d, "listed", [f"{KL} CEO: Rex Stone."], kind="blog", pub="2026-01-13T00:00:00Z", title="Listed"),
 ])
 
 # ---- V: vantage-mill.test: investor names, members, origins (one build; true_from dates differ for /values)

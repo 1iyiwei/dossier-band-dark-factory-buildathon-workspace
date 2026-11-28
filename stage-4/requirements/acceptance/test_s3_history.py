@@ -9,7 +9,7 @@ import pytest
 import s2model as m
 import s3model as s3
 from conftest import BASE, MOCK, Api, assert_status, err, ok_json, parse_ts
-from s3util import M, SEVEN, T, changes_all, dt, history_of, run_timeline
+from s3util import M, EIGHT, T, changes_all, dt, history_of, run_timeline
 
 TYPES = {"legal_name": [], "hq_city": [], "founded_year": ["change"], "headcount_range": ["initial"],
          "funding_total": [], "ceo": ["initial", "change", "correction", "change", "change"],
@@ -41,7 +41,7 @@ def test_selected_values_follow_the_evidence_of_each_epoch(tl):
     value, status and citations follow from the candidates; literal true_from per build)"""
     for k, step in enumerate(tl.ready):
         st = tl.builds[k].state()
-        for name in SEVEN:
+        for name in EIGHT:
             f = step.body["fields"][name]
             assert f["value"] == st[name]["value"], (k, name)
             assert f["status"] == st[name]["status"], (k, name)
@@ -62,11 +62,11 @@ def test_candidates_carry_true_from_and_learned_at(tl):
     candidate set held the same field, value, URL and provider; candidates carry the page's true_from)"""
     seen = {}                                   # (name, value, url, provider) -> time of first build
     for k, step in enumerate(tl.ready):
-        for name in SEVEN:
+        for name in EIGHT:
             for c in step.body["fields"][name]["candidates"]:
                 ident = (name, c.get("title"), c["value"], c["url"], c["provider"])
                 seen.setdefault(ident, step.time)
-        for name in SEVEN:
+        for name in EIGHT:
             for c in step.body["fields"][name]["candidates"]:
                 ident = (name, c.get("title"), c["value"], c["url"], c["provider"])
                 assert dt(c["retrieved_at"]) == step.time, (k, name, "retrieved_at")
@@ -105,8 +105,8 @@ def test_history_lists_every_field_in_the_order_the_entries_were_added(tl):
     true_from/learned_at/citations are those of the selected value it records; typed initial/change/correction)"""
     h = history_of(tl.w.ada, M)
     assert set(h) == {"domain", "fields"} and h["domain"] == M
-    assert list(h["fields"]) == list(SEVEN)
-    for name in SEVEN:
+    assert list(h["fields"]) == list(EIGHT)
+    for name in EIGHT:
         got = h["fields"][name]
         assert [e["type"] for e in got] == TYPES[name], (name, [e["type"] for e in got])
         exp = tl.hist[name]
@@ -125,7 +125,7 @@ def test_each_entry_records_the_selected_value_as_the_build_returned_it(tl):
     """S3-HI-4 S3-HI-5 (value, true_from, learned_at and citations of an entry equal the dossier's field right after
     the build that added it; a value that disappears is an entry with null value, true_from null, no citations)"""
     h = history_of(tl.w.ada, M)["fields"]
-    for name in SEVEN:
+    for name in EIGHT:
         entries = iter(h[name])
         e = next(entries, None)
         prev = None
@@ -221,10 +221,10 @@ def test_feed_entries_agree_with_history(tl):
     """S3-FD-5 (every change/correction entry of the history is one feed entry with the same value, true_from,
     learned_at; the number of entries matches exactly: none twice, none missing)"""
     h = history_of(tl.w.ada, M)["fields"]
-    hist_entries = sorted(((dt(e["learned_at"]), SEVEN.index(f), e["type"], repr(e["value"]), e["true_from"])
+    hist_entries = sorted(((dt(e["learned_at"]), EIGHT.index(f), e["type"], repr(e["value"]), e["true_from"])
                            for f, es in h.items() for e in es if e["type"] != "initial"),
                           key=lambda t: (t[0], t[1]))
-    feed = sorted(((dt(e["learned_at"]), SEVEN.index(e["field"]), e["type"], repr(e["to"]), e["true_from"])
+    feed = sorted(((dt(e["learned_at"]), EIGHT.index(e["field"]), e["type"], repr(e["to"]), e["true_from"])
                    for e in changes_all(tl.w.ada)), key=lambda t: (t[0], t[1]))
     assert feed == hist_entries
 

@@ -13,7 +13,7 @@ import s2model as m
 import s3model as s3
 from conftest import (ADA, BASE, BASE2, BASE_S1, BASE_S2, FIELDS, MOCK, MOCK_TOKEN, NOW0, UNKNOWN, Api, Mock, PW,
                       assert_status, check_build, err, fixture, new_key, ok_json, parse_ts, CORPUS_S2, six)
-from s3util import SEVEN, as_of, changes_all, dt, history_of, values
+from s3util import EIGHT, as_of, changes_all, dt, history_of, values
 
 KY = "keystone-yards.test"
 OTHER = "northwind-optics.test"
@@ -140,7 +140,7 @@ def test_stage_1_import_gives_one_initial_entry_per_field_with_a_value_and_no_fe
     for d in (KY, OTHER):
         b = ok_json(s1.ada.get(f"/dossiers/{d}"))
         h = history_of(s1.ada, d)
-        assert list(h["fields"]) == list(SEVEN)
+        assert list(h["fields"]) == list(EIGHT)
         ra = dt(b["researched_at"])
         for name in FIELDS:
             f, es = b["fields"][name], h["fields"][name]
