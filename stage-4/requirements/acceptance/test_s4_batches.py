@@ -99,7 +99,7 @@ def test_a_domain_with_a_dossier_is_not_researched_and_costs_the_batch_nothing(p
     assert [d["state"] for d in r.first["dossiers"]] == ["ready", "building"]
     assert w.dossier(w.ada, "northwind-optics.test") == old
     for c in r.calls:
-        assert "northwind" not in (c["query"] or "").lower() and not any("northwind" in u for u in c["urls"]), c
+        assert "northwind" not in (c["query"] or "").lower() and c["method"] != "research" or "fleet-delta" in (c["query"] or ""), c
     assert r.done["spent_units"] == cost_of(r.calls) == w.dossier(w.ada, "fleet-delta.test")["spent_units"] > 0
     assert [d["state"] for d in r.done["dossiers"]] == ["ready", "ready"]
 

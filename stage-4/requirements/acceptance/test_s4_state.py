@@ -107,10 +107,11 @@ def test_a_build_running_at_the_stop_ends_within_ten_seconds_and_is_one_build(pw
         pytest.skip("RESTART_CMD is not set")
     w = pworld
     old, _ = w.build(w.ada, NW)
-    before = full_view(w.ada, NW, keys=[])
+    before = {k: v for k, v in full_view(w.ada, NW, keys=[]).items() if k != "list"}
     key = new_key()
     d = "fleet-delta.test"
     mark = len(w.mock.log())
+    before_list = ok_json(w.ada.get("/dossiers", params={"limit": 200}))["dossiers"]
     holder = {}
     t_health = run_through_restart(w, lambda: holder.update(first=ok_json(w.ada.post("/dossiers", body={"domain": d}, key=key), 202)))
     api = Api(BASE, w.ada.token)
@@ -126,7 +127,10 @@ def test_a_build_running_at_the_stop_ends_within_ten_seconds_and_is_one_build(pw
     assert b["spent_units"] >= billed, f"S4-RS-5 spent_units {b['spent_units']} < billed {billed}"
     if b["state"] == "failed":
         assert b["researched_at"] is None and all(f["status"] == "unknown" for f in b["fields"].values())
-    assert full_view(api, NW, keys=[]) == before, "S4-RS-2 everything else answers as before"
+    assert {k: v for k, v in full_view(api, NW, keys=[]).items() if k != "list"} == before, \
+        "S4-RS-2 everything else answers as before"
+    lst = ok_json(api.get("/dossiers", params={"limit": 200}))["dossiers"]
+    assert [x for x in lst if x["domain"] == NW] == [x for x in before_list if x["domain"] == NW]
     assert ok_json(api.post("/dossiers", body={"domain": d}, key=key), 200) == holder["first"]
     assert_status(Api(BASE).post("/auth/login", body={"email": ADA["email"], "password": ADA["password"]}), 200)
     n = len(w.mock.log())

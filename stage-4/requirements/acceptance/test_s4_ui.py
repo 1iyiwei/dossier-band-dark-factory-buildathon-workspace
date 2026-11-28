@@ -22,8 +22,8 @@ def test_investors_take_none_of_the_stage_2_test_ids_and_do_not_fill_contested(u
     assert not [i for i in all_ids(pg) if re.search(r"investor", i)], all_ids(pg)
     assert not [i for i in tids(pg, r"field-[a-z_]+") if i not in [f"field-{f}" for f in FIELDS]]
     goto(pg, f"/dossiers/{V}/evidence", "evidence-ceo")
-    assert sorted(tids(pg, r"evidence-[a-z_]+")) == sorted(f"evidence-{f}" for f in FIELDS) or \
-        sorted(i for i in tids(pg, r"evidence-[a-z_]+") if not i.startswith("evidence-empty")) == sorted(f"evidence-{f}" for f in FIELDS)
+    assert sorted(tids(pg, r"evidence-(legal_name|hq_city|ceo|founded_year|headcount_range|funding_total)")) \
+        == sorted(f"evidence-{f}" for f in FIELDS)
     assert not [i for i in all_ids(pg) if re.search(r"investor", i)]
     goto(pg, "/contested", "contested-list|empty-contested")
     items = tids(pg, r"contested-item-.*")

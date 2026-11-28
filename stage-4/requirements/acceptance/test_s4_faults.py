@@ -48,10 +48,14 @@ def test_a_failing_research_run_leaves_what_search_and_extract_reach(pworld):
         check_shape(b)
         check_citations(b, w.mock.log())
         res, info, _ = s3.expected_all(BM, 0, CORPUS_S2, research=False)
+        full, _, _ = s3.expected_all(BM, 0, CORPUS_S2, research=True)
         for name in ("legal_name", "hq_city", "ceo", "founded_year", "headcount_range", "funding_total"):
             got = {(c["url"], c["value"]) for c in b["fields"][name]["candidates"]}
             must, may = res[name]["must"], res[name]["may"]
-            assert must <= got <= must | may, (mode, name, got, must)
+            if mode == "error":                  # no research run is ever answered
+                assert must <= got <= must | may, (mode, name, got, must)
+            else:        # a permanent 429 is answered on the fourth attempt (mock README): research may succeed
+                assert must <= got <= full[name]["must"] | full[name]["may"] | may, (mode, name, got, must)
             assert (b["fields"][name]["status"] != "unknown") == bool(got), (mode, name)
         charge_free(w.mock.log())
         assert b["spent_units"] == cost_of(calls)

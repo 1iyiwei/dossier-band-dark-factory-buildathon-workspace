@@ -7,7 +7,7 @@ import pytest
 
 import s2model as m
 import s3model as s3
-from conftest import (BASE, CORPUS_S2, MOCK, MOCK_TOKEN, Api, Mock, World, assert_status, check_build, err,
+from conftest import (UNKNOWN, BASE, CORPUS_S2, MOCK, MOCK_TOKEN, Api, Mock, World, assert_status, check_build, err,
                       fixture, new_key, ok_json, parse_ts)
 from s3util import M, EIGHT, T, STEPS, as_of, dt, run_timeline, spent_until, values
 
@@ -86,8 +86,7 @@ def test_as_of_describes_the_selected_value_at_that_snapshot(tl):
     assert got["headcount_range"]["true_from"] == "2019-06-01" and dt(got["headcount_range"]["learned_at"]) == dt(T["0"])
     assert got["founded_year"]["value"] == 2003 and dt(got["founded_year"]["learned_at"]) == dt(T["2"])
     early = ok_json(as_of(tl.w.ada, M, T["0"]))["fields"]
-    assert early["founded_year"] == {"value": None, "status": "unknown", "true_from": None, "learned_at": None,
-                                     "citations": [], "candidates": []}
+    assert early["founded_year"] == UNKNOWN          # stage 4: with origins [], corroborated false, corroborated_since null
     assert early["headcount_range"]["true_from"] == "2020-01-01"
     assert early["ceo"]["learned_at"] is not None and dt(early["ceo"]["learned_at"]) == dt(T["0"])
     assert early["executives"]["value"] == [{"title": "cfo", "name": "Ana Silva"},
