@@ -10,6 +10,10 @@ title and snippet never name the company is first checked with a plain extract (
 rendered only when the text it serves names the company: a page that never names it states
 nothing about it. When the providers are slow there is no time for that check and every page is
 rendered, so reading is one round of parallel calls after discovery.
+
+A page that copies another (``Canonical``) takes the origin of the original, which the build must have
+seen: it looks the original up with a plain extract (1 unit) unless it has read it already. Some budget
+is kept back from the first round of reading for those lookups, and what they leave reads more pages.
 """
 from __future__ import annotations
 
@@ -24,7 +28,8 @@ from .evidence import Evidence
 from .gateway import RENDERED_EXTRACT_COST, BuildStopped, CallFailed, Gateway, SearchHit
 from .ledger import BudgetExhausted
 from .pages import citable_sentences, parse_served_text
-from .support import SLOTS, names_company, supported_value
+from .lineage import MAX_CANONICAL_HOPS
+from .support import SLOTS, names_company, slot_values
 from .versions import PageVersion
 
 log = logging.getLogger("dossier.builder")
@@ -37,10 +42,13 @@ FIELD_QUERIES = {
     "headcount_range": "employees headcount staff people workforce",
     "funding_total": "raised funding investment invested",
     "executives": "chief financial officer CFO chief operating officer COO chief technology officer CTO",
+    "investors": "investors investor led by backed by participated",
 }
 _SEPARATORS = re.compile(r"[-_./]+")
 PREFILTER_SHARE = 0.3          # at most this share of the budget left after discovery checks doubtful pages
 MENTION_BONUS = 2.0
+ORIGIN_RESERVE = 8             # units kept back from the first round of reading for looking up originals
+_UNKNOWN = object()            # a lookup that got no answer, as opposed to an answer that no page is served
 
 
 @dataclass(frozen=True)
@@ -55,6 +63,8 @@ class Builder:
         self._gateway = gateway
         self._pool = pool
         self._evidence = Evidence(domain)
+        self._attempted: set[str] = set()       # pages already asked for a rendered read
+        self._looked_up: set[str] = set()       # originals already asked for
 
     def run(self) -> BuildResult:
         try:
@@ -99,15 +109,47 @@ class Builder:
         for url in mentioned:
             likely[url] += MENTION_BONUS
         ranked = sorted(sure + mentioned, key=lambda url: -likely[url])
-        batch = list(dict.fromkeys(cited + ranked))[:self._gateway.budget_left() // RENDERED_EXTRACT_COST]
+        queue = list(dict.fromkeys(cited + ranked))
+        self._read_pages(queue, ORIGIN_RESERVE)
+        self._look_up_originals()
+        self._read_pages(queue, 0)
+        self._look_up_originals()
+
+    def _read_pages(self, queue: list[str], reserve: int) -> None:
+        """Read, with a rendered extract, as many of the pages in ``queue`` not yet read as the budget less ``reserve`` pays for."""
+        room = max(self._gateway.budget_left() - reserve, 0) // RENDERED_EXTRACT_COST
+        batch = [url for url in queue if url not in self._attempted][:room]
+        self._attempted.update(batch)
         texts = self._fan_out([lambda u=url: self._gateway.extract_rendered(u) for url in batch])
         for url, text in zip(batch, texts):
             if text:
                 self._evidence.add_page(url, "nimble", text)
 
+    def _look_up_originals(self) -> None:
+        """Look up, with plain extracts, the originals that the origins of the pages read depend on."""
+        for _ in range(MAX_CANONICAL_HOPS):
+            urls = [url for url in self._evidence.unresolved() if url not in self._looked_up]
+            urls = urls[:max(self._gateway.budget_left(), 0)]
+            if not urls:
+                return
+            self._looked_up.update(urls)
+            for url, text in zip(urls, self._fan_out([lambda u=url: self._original(u) for url in urls])):
+                if text is not _UNKNOWN:
+                    self._evidence.note_served(url, text)
+
+    def _original(self, url: str):
+        """The text served for an original (None when no page is), or ``_UNKNOWN`` when the lookup got no answer."""
+        try:
+            return self._gateway.extract_plain(url)
+        except (CallFailed, BuildStopped, BudgetExhausted):
+            return _UNKNOWN
+
     def _mentioning(self, urls: list[str]) -> list[str]:
         """The pages among ``urls`` whose served text names the company."""
         texts = self._fan_out([lambda u=url: self._gateway.extract_plain(u) for url in urls])
+        for url, text in zip(urls, texts):
+            if text:
+                self._evidence.note_served(url, text)
         return [url for url, text in zip(urls, texts) if text and names_company(parse_served_text(text).prose, self._domain)]
 
     def _names_company(self, hit: SearchHit) -> bool:
@@ -123,8 +165,8 @@ class Builder:
         score = 3.0 if host == self._domain else 0.0
         if self._names_company(hit):
             score += 2.0
-        if any(supported_value(field, sentence, self._domain) is not None
-               for sentence in citable_sentences(parse_served_text(hit.text).prose) for field in SLOTS):
+        if any(slot_values(slot, sentence, self._domain)
+               for sentence in citable_sentences(parse_served_text(hit.text).prose) for slot in SLOTS):
             score += 2.0
         return score + sum(1.0 - 0.05 * rank for rank, _ in appearances)
 

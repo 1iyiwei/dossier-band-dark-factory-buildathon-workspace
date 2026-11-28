@@ -13,10 +13,11 @@ FIXTURE = {"now": "2026-03-01T09:00:00+00:00",
                       "display_name": "Ada"}]}
 
 
-def build_fn(domain, on_spend, stopped):
-    on_spend(7)
+def build_fn(domain, ledger, stopped):
+    ledger.reserve(7)
+    ledger.settle(7, True)
     ceo = Candidate("Dana Ruiz", "https://x.test/a", "e", "nimble", "own", "2026-01-10T00:00:00+00:00",
-                    true_from="2026-01-10")
+                    true_from="2026-01-10", origin="x.test")
     return BuildResult([PageVersion("https://x.test/a", "2026-01-10", (("ceo", ceo),))], True)
 
 

@@ -1,0 +1,96 @@
+{
+ "domain": "kestrel-freight.test",
+ "names": [
+  "Kestrel Freight"
+ ],
+ "pages": [
+  {
+   "url": "https://kestrel-freight.test/about",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "about - kestrel-freight.test",
+   "text": "Kestrel Freight was established in 1998.\nKestrel Freight moves containers across Iberia.",
+   "facts": {
+    "hq_city": "Lisbon",
+    "headcount_range": "51-200",
+    "ceo": "Pedro Alves"
+   },
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "kestrel-freight.test"
+   }
+  },
+  {
+   "url": "https://kestrel-freight.test/legal",
+   "kind": "filing",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "legal - kestrel-freight.test",
+   "text": "The legal entity behind Kestrel Freight is Kestrel Freight GmbH.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "kestrel-freight.test"
+   }
+  },
+  {
+   "url": "https://kestrel-freight.test/leadership",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": false,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "leadership - kestrel-freight.test",
+   "text": "Ines Duarte is the CEO of Kestrel Freight.\nKestrel Freight has raised $12M in funding to date.\nKestrel Freight might employ 300 people.\nKestrel Freight opened a depot in Porto.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "kestrel-freight.test"
+   }
+  }
+ ],
+ "research": {
+  "nimble": {
+   "0": [
+    {
+     "field": "ceo",
+     "value": "Ines Duarte",
+     "url": "https://kestrel-freight.test/leadership",
+     "excerpt": "Ines Duarte is the CEO of Kestrel Freight."
+    },
+    {
+     "field": "funding_total",
+     "value": 12000000,
+     "url": "https://kestrel-freight.test/leadership",
+     "excerpt": "Kestrel Freight has raised $12M in funding to date."
+    },
+    {
+     "field": "headcount_range",
+     "value": "201-500",
+     "url": "https://kestrel-freight.test/leadership",
+     "excerpt": "Kestrel Freight might employ 300 people."
+    },
+    {
+     "field": "hq_city",
+     "value": "Porto",
+     "url": "https://kestrel-freight.test/leadership",
+     "excerpt": "Kestrel Freight opened a depot in Porto."
+    }
+   ]
+  }
+ }
+}

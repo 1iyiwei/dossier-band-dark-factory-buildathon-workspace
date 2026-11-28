@@ -1,18 +1,21 @@
-"""A dossier's exported form: stage-3 state, and the upgrade of stage-1 and stage-2 exports.
+"""A dossier's exported form: stage-4 state, and the upgrade of stage-1, stage-2 and stage-3 exports.
 
-A stage-3 export keeps every build with the pages it gathered, so ``?as_of=`` and ``/values``
-answer after an import as they did before. A stage-1 or stage-2 export keeps only the last
+A stage-3 or stage-4 export keeps every build with the pages it gathered, so ``?as_of=`` and ``/values``
+answer after an import as they did before. A stage-3 export has no ``investors`` and records no origins:
+a candidate's origin is then the host of its URL. A stage-1 or stage-2 export keeps only the last
 build's fields; that counts as one build that completed ``ready`` at ``researched_at``.
 """
 from __future__ import annotations
 
 import copy
+from dataclasses import replace
 
 from .clock import parse_timestamp, try_parse_timestamp
 from .domains import is_valid_domain
 from .dossier import BuildRecord, Dossier, iso
-from .selection import KINDS, Candidate, candidate_of
-from .support import ALL_FIELDS, FIELDS, SLOTS, supported_value
+from .lineage import host_of
+from .selection import KINDS, Candidate, candidate_of, unknown_view
+from .support import ALL_FIELDS, FIELDS, INVESTORS, SLOTS, supported_value
 from .versions import PageVersion, published_date, valid_date
 
 HEADCOUNT_VALUES = ("1-10", "11-50", "51-200", "201-500", "501-1000", "1001-5000", "5001-10000", "10001+")
@@ -25,10 +28,11 @@ def is_int(value) -> bool:
 
 # ---------------------------------------------------------------------- export
 
-def export_dossier(dossier: Dossier) -> dict:
-    """The dossier as it was before any running build."""
+def export_dossier(dossier: Dossier, running: bool = False) -> dict:
+    """The dossier as it was before any running build; with ``running``, the journal's form, which also
+    records the running build: its time, batch and the units it has spent or has in flight."""
     building = dossier.build is not None
-    return {
+    exported = {
         "dossier_id": dossier.dossier_id,
         "domain": dossier.domain,
         "state": dossier.outcome,
@@ -39,18 +43,22 @@ def export_dossier(dossier: Dossier) -> dict:
             "time": record.time.isoformat(), "outcome": record.outcome, "spent": record.spent,
             "pages": [{"url": page.url, "true_from": page.true_from,
                        "candidates": [{"slot": slot, "value": c.value, "excerpt": c.excerpt, "provider": c.provider,
-                                       "kind": c.kind, "published_at": c.published_at}
+                                       "kind": c.kind, "published_at": c.published_at, "origin": c.origin}
                                       for slot, c in page.candidates]} for page in record.pages],
             "fields": copy.deepcopy(record.fields),
         } for record in dossier.builds],
         "history": copy.deepcopy(dossier.history),
     }
+    if running and building:
+        exported["running"] = {"time": dossier.build.time.isoformat(), "batch": dossier.build.batch_id,
+                               "spent": dossier.spent_units - dossier.spent_before_build, "inflight": dossier.inflight}
+    return exported
 
 
 # ---------------------------------------------------------------------- stage-3 import
 
 def parse_dossier(raw: dict) -> Dossier:
-    """A dossier from a stage-3 export; ValueError, KeyError or TypeError when it is not one."""
+    """A dossier from a stage-3 or stage-4 export; ValueError, KeyError or TypeError when it is not one."""
     dossier = _parse_identity(raw)
     dossier.outcome = _outcome(raw["state"])
     if not is_int(raw["spent_units"]) or raw["spent_units"] < 0:
@@ -64,10 +72,20 @@ def parse_dossier(raw: dict) -> Dossier:
         dossier.fields = copy.deepcopy(ready[-1].fields)
         dossier.researched_at = ready[-1].time
     history = raw["history"]
+    if isinstance(history, dict) and INVESTORS not in history:       # a stage-3 export: no investors yet
+        history = {**history, INVESTORS: []}
     if not isinstance(history, dict) or set(history) != set(ALL_FIELDS):
-        raise ValueError("history must hold the seven fields")
+        raise ValueError("history must hold the eight fields")
     dossier.history = {name: [_parse_entry(e) for e in history[name]] for name in ALL_FIELDS}
     dossier.index_first_seen()
+    dossier.refresh_corroboration()
+    running = raw.get("running")
+    if running is not None:
+        parse_timestamp(running["time"])
+        if not is_int(running["spent"]) or not is_int(running["inflight"]) or running["spent"] < 0 \
+                or running["inflight"] < 0 or not (running["batch"] is None or isinstance(running["batch"], str)):
+            raise ValueError("bad running build")
+        dossier.interrupted = {key: running[key] for key in ("time", "batch", "spent", "inflight")}
     return dossier
 
 
@@ -104,18 +122,29 @@ def _parse_page(raw: dict) -> PageVersion:
             raise ValueError("bad candidate slot")
         found.append((entry["slot"], check_candidate(entry["slot"], Candidate(
             entry["value"], raw["url"], entry["excerpt"], entry["provider"], entry["kind"], entry["published_at"],
-            true_from=true_from))))
+            true_from=true_from, origin=entry.get("origin")))))
     return PageVersion(raw["url"], true_from, tuple(found))
 
 
 def _parse_snapshot(raw: dict) -> dict[str, dict]:
+    """The fields a build left. A stage-3 build has no ``investors``, which is unknown; a candidate with no
+    recorded origin has its URL's host. ``origins`` and ``corroborated_since`` are derived again afterwards."""
+    if isinstance(raw, dict) and INVESTORS not in raw:
+        raw = {**raw, INVESTORS: unknown_view()}
     if not isinstance(raw, dict) or set(raw) != set(ALL_FIELDS):
-        raise ValueError("fields must be the seven dossier fields")
-    for entry in raw.values():
+        raise ValueError("fields must be the eight dossier fields")
+    fields = copy.deepcopy(raw)
+    for entry in fields.values():
         if entry["status"] not in ("known", "contested", "unknown") or not isinstance(entry["candidates"], list) \
                 or not isinstance(entry["citations"], list):
             raise ValueError("bad field")
-    return copy.deepcopy(raw)
+        for candidate in entry["candidates"]:
+            if candidate.get("origin") is None:
+                candidate["origin"] = host_of(candidate["url"])
+        entry.setdefault("origins", [])
+        entry.setdefault("corroborated", False)
+        entry.setdefault("corroborated_since", None)
+    return fields
 
 
 def _parse_entry(raw: dict) -> dict:
@@ -171,8 +200,7 @@ def _pages_of(found: dict[str, list[Candidate]]) -> list[PageVersion]:
 
 
 def _with_true_from(candidate: Candidate, true_from: str | None) -> Candidate:
-    return Candidate(candidate.value, candidate.url, candidate.excerpt, candidate.provider, candidate.kind,
-                     candidate.published_at, candidate.retrieved_at, true_from, candidate.learned_at)
+    return replace(candidate, true_from=true_from)
 
 
 def _upgrade_candidates(raw: dict, researched_at, domain: str) -> dict[str, list[Candidate]]:
@@ -231,7 +259,7 @@ def _parse_stage_two_candidate(name: str, entry: dict) -> Candidate:
 
 
 def check_candidate(name: str, candidate: Candidate) -> Candidate:
-    """``candidate`` when it is well formed for field or title ``name``."""
+    """``candidate`` when it is well formed for field or title ``name``; an unrecorded origin is its URL's host."""
     _check_value(name, candidate.value)
     if not all(isinstance(v, str) for v in (candidate.url, candidate.excerpt, candidate.provider)):
         raise ValueError("bad candidate")
@@ -239,6 +267,10 @@ def check_candidate(name: str, candidate: Candidate) -> Candidate:
         raise ValueError("bad candidate kind")
     if candidate.published_at is not None and try_parse_timestamp(candidate.published_at) is None:
         raise ValueError("bad candidate timestamp")
+    if candidate.origin is None:
+        return replace(candidate, origin=host_of(candidate.url))
+    if not isinstance(candidate.origin, str):
+        raise ValueError("bad candidate origin")
     return candidate
 
 

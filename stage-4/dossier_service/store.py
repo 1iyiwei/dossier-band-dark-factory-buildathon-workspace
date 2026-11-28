@@ -1,7 +1,7 @@
 """All service state behind one lock: users, tokens, dossiers, the change feed, idempotency, export/import.
 
 Every request takes the lock briefly; builds do their provider calls outside it and only
-touch state through ``_add_spent`` and ``_finish_build``, which ignore a build whose state
+touch state through their ledger (``_reserve``, ``_settle``) and ``_run_build``, which ignore a build whose state
 was replaced (reset or import) or superseded. Every change is written to the journal
 (``persistence.py``) before the lock is released, so no request is answered with state a
 restart would lose.
@@ -17,18 +17,21 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from .batches import Batch, export_batch, parse_batch
 from .builder import BuildResult
 from .clock import Clock, parse_timestamp
 from .codec import export_dossier, is_int, parse_dossier, parse_feed_entry, upgrade_dossier
+from .config import BUILD_BUDGET_UNITS
 from .dossier import Build, Dossier, iso
 from .errors import ApiError, malformed, validation_failed
+from .ledger import BudgetExhausted, Ledger
 from .passwords import hash_password, verify_password
 from .persistence import COMPACT_BYTES, Journal
 from .support import ALL_FIELDS
 
 log = logging.getLogger("dossier.store")
 
-BuildFn = Callable[[str, Callable[[int], None], Callable[[], bool]], BuildResult]
+BuildFn = Callable[[str, Ledger, Callable[[], bool]], BuildResult]
 
 EXPORT_TRACK = "dossier"
 EXPORT_VERSION = 1
@@ -55,6 +58,8 @@ class State:
     counter: int = 0
     feed: list[dict] = field(default_factory=list)
     next_seq: int = 1
+    batches: dict[str, Batch] = field(default_factory=dict)
+    batch_counter: int = 0
 
 
 class Store:
@@ -81,6 +86,8 @@ class Store:
         self._dossier_counter = state.counter
         self._feed = state.feed
         self._next_seq = state.next_seq
+        self._batches = state.batches
+        self._batch_counter = state.batch_counter
 
     # ------------------------------------------------------------------ durability
 
@@ -96,6 +103,7 @@ class Store:
                     for kind, payload in batch:
                         clock = _apply_record(state, kind, payload, clock)
                 self._adopt(state)
+                self._recover_interrupted()
                 self.clock.restore(parse_timestamp(clock) if clock is not None else None)
             except (KeyError, TypeError, ValueError, AttributeError, ApiError):
                 log.exception("the journal is not readable; starting empty")
@@ -103,10 +111,26 @@ class Store:
         with self._lock:
             self._persist()
 
+    def _recover_interrupted(self) -> None:
+        """A build the stop found running is over: it ends ``failed``, leaving the fields as they were.
+
+        Every unit it had spent, or had in flight (a call the provider may have billed), stays counted,
+        for its dossier and for its batch.
+        """
+        for dossier in self._dossiers.values():
+            if dossier.interrupted is not None:
+                units = dossier.interrupted["spent"] + dossier.interrupted["inflight"]
+                dossier.spent_units += units
+                dossier.complete_failed_build(parse_timestamp(dossier.interrupted["time"]), units)
+                dossier.interrupted = None
+        for batch in self._batches.values():
+            batch.spent_units += batch.inflight
+            batch.inflight = 0
+
     def _mark(self, kind: str, key: object) -> None:
         self._pending[(kind, key)] = None
 
-    def _persist(self) -> None:
+    def _persist(self, sync: bool = True) -> None:
         """Write the changes since the last write to disk. Call with the lock held, before answering."""
         if self._journal is None:
             return
@@ -115,7 +139,7 @@ class Store:
                 self._journal.rewrite(self._snapshot())
                 self._full = False
             else:
-                self._journal.append(self._records())
+                self._journal.append(self._records(), sync)
             self._pending.clear()
             self._feed_written = len(self._feed)
         except Exception:   # noqa: BLE001 - the request still stands; the next write is a whole snapshot
@@ -123,7 +147,7 @@ class Store:
             self._full = True
 
     def _snapshot(self) -> dict:
-        return {"export": self.export_state(), "clock": iso(self.clock.fixed())}
+        return {"export": self.export_state(journal=True), "clock": iso(self.clock.fixed())}
 
     def _records(self) -> list:
         records: list = []
@@ -133,13 +157,23 @@ class Store:
             elif kind == "token":
                 records.append(["token", [key, self._tokens[key]]])
             elif kind == "dossier":
-                records.append(["dossier", export_dossier(self._dossiers[key])])
+                records.append(["dossier", export_dossier(self._dossiers[key], running=True)])
+            elif kind == "batch":
+                records.append(["batch", export_batch(self._batches[key], journal=True)])
+            elif kind == "progress":
+                dossier = self._dossiers[key]
+                batch = self._batches.get(dossier.build.batch_id) if dossier.build is not None else None
+                records.append(["progress", {
+                    "domain": key, "spent": dossier.spent_units - dossier.spent_before_build,
+                    "inflight": dossier.inflight, "batch": None if batch is None else batch.batch_id,
+                    "batch_spent": 0 if batch is None else batch.spent_units,
+                    "batch_inflight": 0 if batch is None else batch.inflight}])
             elif kind == "idempotency":
                 records.append(["idempotency", _idempotency_entry(key, self._idempotency[key])])
         if len(self._feed) > self._feed_written:
             records.append(["feed", copy.deepcopy(self._feed[self._feed_written:])])
         records.append(["meta", {"dossier_counter": self._dossier_counter, "next_seq": self._next_seq,
-                                 "clock": iso(self.clock.fixed())}])
+                                 "batch_counter": self._batch_counter, "clock": iso(self.clock.fixed())}])
         return records
 
     # ------------------------------------------------------------------ reset and clock
@@ -231,12 +265,43 @@ class Store:
             dossier = self._dossiers.get(domain)
             if dossier is not None:
                 return 200, self._summary(dossier)
-            self._dossier_counter += 1
-            dossier = Dossier(f"d_{self._dossier_counter}", domain)
-            self._dossiers[domain] = dossier
-            self._mark("dossier", domain)
+            dossier = self._create_dossier(domain)
             self._start_build(dossier)
             return 202, self._summary(dossier)
+
+    def _create_dossier(self, domain: str) -> Dossier:
+        self._dossier_counter += 1
+        dossier = Dossier(f"d_{self._dossier_counter}", domain)
+        self._dossiers[domain] = dossier
+        self._mark("dossier", domain)
+        return dossier
+
+    def start_batch(self, user_id: str, domains: list[str], budget_units: int) -> tuple[int, dict]:
+        """POST /batches: a first build for each domain that has no dossier, all under one budget."""
+        with self._lock:
+            self._batch_counter += 1
+            batch = Batch(f"b_{self._batch_counter}", user_id, budget_units, domains)
+            self._batches[batch.batch_id] = batch
+            self._mark("batch", batch.batch_id)
+            for domain in domains:
+                if domain not in self._dossiers:
+                    batch.builds.append(domain)
+                    self._start_build(self._create_dossier(domain), batch)
+            return 202, self._batch_view(batch)
+
+    def get_batch(self, user_id: str, batch_id: str) -> dict:
+        with self._lock:
+            batch = self._batches.get(batch_id)
+            if batch is None or batch.user_id != user_id:
+                raise ApiError(404, "not_found", "no such batch")
+            return self._batch_view(batch)
+
+    def _batch_view(self, batch: Batch) -> dict:
+        running = any(self._dossiers[d].build is not None and self._dossiers[d].build.batch_id == batch.batch_id
+                      for d in batch.builds)
+        return {"batch_id": batch.batch_id, "state": "running" if running else "done",
+                "budget_units": batch.budget_units, "spent_units": batch.spent_units,
+                "dossiers": [{"domain": d, "state": self._dossiers[d].state} for d in batch.domains]}
 
     def refresh_dossier(self, domain: str) -> tuple[int, dict]:
         """POST /dossiers/{domain}/refresh. Call under ``idempotent``."""
@@ -318,10 +383,11 @@ class Store:
 
     # ------------------------------------------------------------------ builds
 
-    def _start_build(self, dossier: Dossier) -> None:
-        build = Build(self._epoch, self.clock.now())
+    def _start_build(self, dossier: Dossier, batch: Batch | None = None) -> None:
+        build = Build(self._epoch, self.clock.now(), batch.batch_id if batch is not None else None)
         dossier.build = build
         dossier.spent_before_build = dossier.spent_units
+        dossier.inflight = 0
         threading.Thread(target=self._run_build, args=(dossier, build), daemon=True,
                          name=f"build-{dossier.domain}").start()
 
@@ -331,7 +397,7 @@ class Store:
     def _run_build(self, dossier: Dossier, build: Build) -> None:
         result: BuildResult | None = None
         try:
-            result = self._build_fn(dossier.domain, lambda units: self._add_spent(dossier, build, units),
+            result = self._build_fn(dossier.domain, self._ledger(dossier, build),
                                     lambda: not self._is_current(dossier, build))
         except Exception:   # noqa: BLE001 - a crashed build must still end, as failed
             log.exception("build of %s crashed", dossier.domain)
@@ -339,6 +405,7 @@ class Store:
             if not self._current(dossier, build):
                 return
             dossier.build = None
+            dossier.inflight = 0
             spent = dossier.spent_units - dossier.spent_before_build
             try:
                 if result is None or not result.succeeded:
@@ -354,32 +421,91 @@ class Store:
                     self._feed.append({"seq": self._next_seq, "domain": dossier.domain, **entry})
                     self._next_seq += 1
             self._mark("dossier", dossier.domain)
+            if build.batch_id in self._batches:
+                self._mark("batch", build.batch_id)
             self._persist()
 
     def _is_current(self, dossier: Dossier, build: Build) -> bool:
         with self._lock:
             return self._current(dossier, build)
 
-    def _add_spent(self, dossier: Dossier, build: Build, units: int) -> None:
+    # ------------------------------------------------------------------ the units a build spends
+
+    def _ledger(self, dossier: Dossier, build: Build) -> Ledger:
+        return Ledger(lambda cost: self._reserve(dossier, build, cost),
+                      lambda cost, charged: self._settle(dossier, build, cost, charged),
+                      lambda: self._remaining(dossier, build))
+
+    def _remaining(self, dossier: Dossier, build: Build) -> int:
+        """Units the build may still reserve: under its own 80 and, in a batch, under what the batch has left."""
         with self._lock:
-            if self._current(dossier, build):
-                dossier.spent_units += units
+            if not self._current(dossier, build):
+                return 0
+            left = BUILD_BUDGET_UNITS - (dossier.spent_units - dossier.spent_before_build) - dossier.inflight
+            batch = self._batches.get(build.batch_id)
+            if batch is not None:
+                left = min(left, batch.budget_units - batch.spent_units - batch.inflight)
+            return max(left, 0)
+
+    def _reserve(self, dossier: Dossier, build: Build, cost: int) -> None:
+        """Count ``cost`` units as in flight before the call is made, so that a stop cannot lose them."""
+        with self._lock:
+            if self._remaining(dossier, build) < cost:
+                raise BudgetExhausted()
+            dossier.inflight += cost
+            batch = self._batches.get(build.batch_id)
+            if batch is not None:
+                batch.inflight += cost
+            self._log_progress(dossier)
+
+    def _settle(self, dossier: Dossier, build: Build, cost: int, charged: bool) -> None:
+        with self._lock:
+            if not self._current(dossier, build):
+                return
+            dossier.inflight -= cost
+            batch = self._batches.get(build.batch_id)
+            if batch is not None:
+                batch.inflight -= cost
+            if charged:
+                dossier.spent_units += cost
+                if batch is not None:
+                    batch.spent_units += cost
+            self._log_progress(dossier)
+
+    def _log_progress(self, dossier: Dossier) -> None:
+        """Journal what the running build has spent and has in flight; it is not forced to disk (see ``Journal.append``)."""
+        self._mark("progress", dossier.domain)
+        self._persist(sync=False)
 
     # ------------------------------------------------------------------ export / import
 
-    def export_state(self) -> dict:
-        """A deep, atomic snapshot. A running build is not in it: the dossier is as it was before."""
+    def export_state(self, journal: bool = False) -> dict:
+        """A deep, atomic snapshot. A running build is not in it: the dossier is as it was before.
+
+        ``journal`` gives the form the journal's snapshot takes, which also records the running builds.
+        """
         with self._lock:
             state = {
                 "users": copy.deepcopy(list(self._users.values())),
                 "tokens": dict(self._tokens),
-                "dossiers": [export_dossier(d) for d in sorted(self._dossiers.values(), key=lambda d: d.domain)],
+                "dossiers": [export_dossier(d, running=journal)
+                             for d in sorted(self._dossiers.values(), key=lambda d: d.domain)],
                 "idempotency": [_idempotency_entry(slot, record) for slot, record in self._idempotency.items()],
                 "dossier_counter": self._dossier_counter,
                 "feed": copy.deepcopy(self._feed),
                 "next_seq": self._next_seq,
+                "batches": [export_batch(b, None if journal else self._exported_spent(b), journal)
+                            for b in self._batches.values()],
+                "batch_counter": self._batch_counter,
             }
             return {"track": EXPORT_TRACK, "format_version": EXPORT_VERSION, "state": state}
+
+    def _exported_spent(self, batch: Batch) -> int:
+        """What the batch spent, less what its running builds have spent: an export holds their dossiers as before."""
+        running = sum(self._dossiers[d].spent_units - self._dossiers[d].spent_before_build
+                      for d in batch.builds if self._dossiers[d].build is not None
+                      and self._dossiers[d].build.batch_id == batch.batch_id)
+        return batch.spent_units - running
 
     def import_state(self, document: dict) -> None:
         """Replace every piece of state with an export; invalid input changes nothing."""
@@ -439,7 +565,7 @@ def _parse_fixture(fixture: dict) -> tuple[datetime, list[dict]]:
 
 
 def _parse_state(state: dict) -> State:
-    """The state of an export; a stage-3 export (it holds the feed) or one of stage 1 or 2, which is upgraded."""
+    """The state of an export: a stage-3 or stage-4 export (it holds the feed), or one of stage 1 or 2, which is upgraded."""
     users: dict[str, dict] = {}
     for raw in state["users"]:
         user = {k: raw[k] for k in ("id", "email", "display_name", "password_hash")}
@@ -467,6 +593,15 @@ def _parse_state(state: dict) -> State:
     counter = state["dossier_counter"]
     if not is_int(counter) or counter < 0:
         raise ValueError("bad counter")
+    batches = {}
+    for raw in state.get("batches", []):
+        batch = parse_batch(raw)
+        if batch.batch_id in batches or any(d not in dossiers for d in batch.builds):
+            raise ValueError("bad batch")
+        batches[batch.batch_id] = batch
+    batch_counter = state.get("batch_counter", 0)
+    if not is_int(batch_counter) or batch_counter < len(batches):
+        raise ValueError("bad batch counter")
     feed, next_seq = [], 1
     if stage_three:
         feed = [parse_feed_entry(e) for e in state["feed"]]
@@ -474,7 +609,7 @@ def _parse_state(state: dict) -> State:
         seqs = [e["seq"] for e in feed]
         if seqs != sorted(set(seqs)) or not is_int(next_seq) or next_seq <= (seqs[-1] if seqs else 0):
             raise ValueError("bad feed")
-    return State(users, dict(tokens), dossiers, idempotency, counter, feed, next_seq)
+    return State(users, dict(tokens), dossiers, idempotency, counter, feed, next_seq, batches, batch_counter)
 
 
 def _parse_idempotency(raw: dict) -> tuple[tuple, IdempotencyRecord]:
@@ -499,8 +634,19 @@ def _apply_record(state: State, kind: str, payload, clock: str | None) -> str | 
         state.idempotency[slot] = record
     elif kind == "feed":
         state.feed.extend(payload)
+    elif kind == "batch":
+        batch = parse_batch(payload)
+        state.batches[batch.batch_id] = batch
+    elif kind == "progress":
+        dossier = state.dossiers[payload["domain"]]
+        if dossier.interrupted is not None:
+            dossier.interrupted.update(spent=payload["spent"], inflight=payload["inflight"])
+        if payload["batch"] in state.batches:
+            state.batches[payload["batch"]].spent_units = payload["batch_spent"]
+            state.batches[payload["batch"]].inflight = payload["batch_inflight"]
     elif kind == "meta":
         state.counter, state.next_seq = payload["dossier_counter"], payload["next_seq"]
+        state.batch_counter = payload.get("batch_counter", state.batch_counter)
         clock = payload["clock"]
     else:
         raise ValueError(f"unknown journal record {kind}")

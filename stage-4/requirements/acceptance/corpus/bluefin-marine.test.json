@@ -1,0 +1,45 @@
+{
+ "domain": "bluefin-marine.test",
+ "names": [
+  "Bluefin Marine"
+ ],
+ "pages": [
+  {
+   "url": "https://bluefin-marine.test/about",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "about - bluefin-marine.test",
+   "text": "Bluefin Marine was founded in 2005.\nBluefin Marine employs about 45 people.\nBluefin Marine raised $3M in a seed round.\nBluefin Marine is headquartered in Scandinavia.\nBluefin Marine's chief executive is Lena Okafor.\nThe registered name of Bluefin Marine is Bluefin Marine Holdings Ltd.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "bluefin-marine.test"
+   }
+  },
+  {
+   "url": "https://bizlistings-hub.test/bluefin-marine",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "bluefin-marine - bizlistings-hub.test",
+   "text": "Bluefin Marine was founded in 2008, according to our listings.\nBluefin Marine has approximately 4,500 employees.\nBluefin Marine has raised $21M in total.\nBluefin Marine CEO Lena Okafor and CFO Jin Park joined in 2019.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": "bluefin-marine.test",
+    "registrant": "bizlistings-hub.test"
+   }
+  }
+ ],
+ "research": {}
+}

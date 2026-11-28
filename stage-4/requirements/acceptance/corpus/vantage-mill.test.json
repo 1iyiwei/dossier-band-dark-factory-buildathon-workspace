@@ -1,0 +1,164 @@
+{
+ "domain": "vantage-mill.test",
+ "names": [
+  "Vantage Mill"
+ ],
+ "pages": [
+  {
+   "url": "https://vantage-mill.test/about",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-10T00:00:00Z",
+   "true_from": "2022-01-01",
+   "title": "About",
+   "text": "Northwind Ventures and Bluebird Capital are investors in Vantage Mill.\nVantage Mill is led by Dana Ruiz.\nVantage Mill is backed by Alpha Investors Fund.\nVantage Mill Ventures participated in a round.\nVantage Mill raised $9M in a round led by the Gates Foundation.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "vantage-mill.test"
+   }
+  },
+  {
+   "url": "https://registry-open.test/vantage-mill",
+   "kind": "filing",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-11T00:00:00Z",
+   "true_from": "2023-03-01",
+   "title": "Registry",
+   "text": "Orion Equity Partners is an investor in Vantage Mill.\nVantage Mill is not backed by Zeta Capital.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "registry-open.test"
+   }
+  },
+  {
+   "url": "https://wirecast-daily.test/vantage-round",
+   "kind": "news",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-12T00:00:00Z",
+   "true_from": "2024-06-01",
+   "title": "Vantage Mill round",
+   "text": "Vantage Mill raised $40M in a round led by General Atlantic.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "wirecast-daily.test"
+   }
+  },
+  {
+   "url": "https://localpress.test/vantage-round",
+   "kind": "news",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-14T00:00:00Z",
+   "true_from": "2024-06-01",
+   "title": "Vantage Mill round",
+   "text": "Vantage Mill raised $40M in a round led by General Atlantic.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": "wirecast-daily.test",
+    "registrant": "localpress.test"
+   }
+  },
+  {
+   "url": "https://tickerpost.test/vantage-backers",
+   "kind": "news",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-13T00:00:00Z",
+   "true_from": "2025-01-01",
+   "title": "Backers",
+   "text": "Investors in Vantage Mill include Sequoia Capital, Index Ventures and Accel Partners.\nVantage Mill is backed by Cedar Capital in 2024.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "tickerpost.test"
+   }
+  },
+  {
+   "url": "https://dealwire.test/vantage-mill",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-15T00:00:00Z",
+   "true_from": "2025-06-01",
+   "title": "Vantage Mill company data",
+   "text": "Vantage Mill is backed by Index Ventures.\nvantage-mill.test is backed by Åkerlund Capital.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "dealwire.test"
+   }
+  },
+  {
+   "url": "https://vantage-mill-co.test/about",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-16T00:00:00Z",
+   "true_from": "2025-09-01",
+   "title": "Vantage Mill",
+   "text": "Vantage Mill is backed by Cedar Capital.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "dns-parking.test"
+   }
+  },
+  {
+   "url": "https://scrape-mirror.test/vm",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-17T00:00:00Z",
+   "true_from": "2025-10-01",
+   "title": "VM",
+   "text": "Orion Equity Partners is an investor in Vantage Mill.",
+   "facts": {},
+   "lineage": {
+    "canonical": "https://registry-open.test/vantage-mill",
+    "first_published_by": null,
+    "registrant": "scrape-mirror.test"
+   }
+  }
+ ],
+ "research": {
+  "nimble": {
+   "0": [
+    {
+     "field": "funding_total",
+     "value": 40000000,
+     "url": "https://wirecast-daily.test/vantage-round",
+     "excerpt": "Vantage Mill raised $40M in a round led by General Atlantic."
+    }
+   ]
+  }
+ }
+}

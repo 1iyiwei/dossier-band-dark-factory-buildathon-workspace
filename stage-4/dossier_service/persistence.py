@@ -59,12 +59,14 @@ class Journal:
         self.size = len(line)
         self._handle = open(self.path, "ab")
 
-    def append(self, records: list) -> None:
-        """Write one batch and force it to disk."""
+    def append(self, records: list, sync: bool = True) -> None:
+        """Write one batch of records. It is forced to disk unless ``sync`` is off; it is then in the operating
+        system's hands, which is enough to survive the process being killed."""
         line = _line({"records": records})
         self._handle.write(line)
         self._handle.flush()
-        os.fsync(self._handle.fileno())
+        if sync:
+            os.fsync(self._handle.fileno())
         self.size += len(line)
 
     def _close(self) -> None:

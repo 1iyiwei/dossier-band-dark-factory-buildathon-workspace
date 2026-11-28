@@ -1,0 +1,279 @@
+{
+ "domain": "hollow-reach.test",
+ "names": [
+  "Hollow Reach"
+ ],
+ "pages": [
+  {
+   "url": "https://chain-a.test/hr",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "A",
+   "text": "Hollow Reach CEO: Ada Green.",
+   "facts": {},
+   "lineage": {
+    "canonical": "https://chain-b.test/hr",
+    "first_published_by": null,
+    "registrant": "chain-a.test"
+   }
+  },
+  {
+   "url": "https://chain-b.test/hr",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": false,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "hr - chain-b.test",
+   "text": "Hollow Reach CEO: Ada Green.",
+   "facts": {},
+   "lineage": {
+    "canonical": "https://chain-c.test/hr",
+    "first_published_by": null,
+    "registrant": "chain-b.test"
+   }
+  },
+  {
+   "url": "https://chain-c.test/hr",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": false,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "hr - chain-c.test",
+   "text": "Hollow Reach CEO: Ada Green.",
+   "facts": {},
+   "lineage": {
+    "canonical": "https://chain-d.test/hr",
+    "first_published_by": null,
+    "registrant": "chain-c.test"
+   }
+  },
+  {
+   "url": "https://chain-d.test/hr",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": false,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "hr - chain-d.test",
+   "text": "Hollow Reach CEO: Ada Green.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "orig-registry.test"
+   }
+  },
+  {
+   "url": "https://deep-a.test/hr",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "deep A",
+   "text": "Hollow Reach CEO: Ben Hall.",
+   "facts": {},
+   "lineage": {
+    "canonical": "https://deep-b.test/hr",
+    "first_published_by": null,
+    "registrant": "deep-a.test"
+   }
+  },
+  {
+   "url": "https://deep-b.test/hr",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": false,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "hr - deep-b.test",
+   "text": "Hollow Reach CEO: Ben Hall.",
+   "facts": {},
+   "lineage": {
+    "canonical": "https://deep-c.test/hr",
+    "first_published_by": null,
+    "registrant": "deep-b.test"
+   }
+  },
+  {
+   "url": "https://deep-c.test/hr",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": false,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "hr - deep-c.test",
+   "text": "Hollow Reach CEO: Ben Hall.",
+   "facts": {},
+   "lineage": {
+    "canonical": "https://deep-d.test/hr",
+    "first_published_by": null,
+    "registrant": "deep-c.test"
+   }
+  },
+  {
+   "url": "https://deep-d.test/hr",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": false,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "hr - deep-d.test",
+   "text": "Hollow Reach CEO: Ben Hall.",
+   "facts": {},
+   "lineage": {
+    "canonical": "https://deep-e.test/hr",
+    "first_published_by": null,
+    "registrant": "deep-d.test"
+   }
+  },
+  {
+   "url": "https://deep-e.test/hr",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": false,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "hr - deep-e.test",
+   "text": "Hollow Reach CEO: Ben Hall.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "deep-e-owner.test"
+   }
+  },
+  {
+   "url": "https://cycle-x.test/hr",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "cycle",
+   "text": "Hollow Reach CEO: Cy Fox.",
+   "facts": {},
+   "lineage": {
+    "canonical": "https://cycle-y.test/hr",
+    "first_published_by": null,
+    "registrant": "cycle-x.test"
+   }
+  },
+  {
+   "url": "https://cycle-y.test/hr",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": false,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "hr - cycle-y.test",
+   "text": "Hollow Reach CEO: Cy Fox.",
+   "facts": {},
+   "lineage": {
+    "canonical": "https://cycle-x.test/hr",
+    "first_published_by": null,
+    "registrant": "cycle-y.test"
+   }
+  },
+  {
+   "url": "https://orphan.test/hr",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "orphan",
+   "text": "Hollow Reach CEO: Di Gray.",
+   "facts": {},
+   "lineage": {
+    "canonical": "https://gone-original.test/hr",
+    "first_published_by": null,
+    "registrant": "orphan.test"
+   }
+  },
+  {
+   "url": "https://selfref.test/hr",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "self",
+   "text": "Hollow Reach CEO: Eve Hill.",
+   "facts": {},
+   "lineage": {
+    "canonical": "https://selfref.test/hr",
+    "first_published_by": null,
+    "registrant": "selfref.test"
+   }
+  },
+  {
+   "url": "https://wwwcanon.test/hr",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "mixed",
+   "text": "Hollow Reach CEO: Fra Ito.",
+   "facts": {},
+   "lineage": {
+    "canonical": "https://WWW.Mixed-Case.TEST/hr",
+    "first_published_by": null,
+    "registrant": "wwwcanon.test"
+   }
+  },
+  {
+   "url": "https://fpb-first.test/hr",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "fpb",
+   "text": "Hollow Reach CEO: Gil Ivy.",
+   "facts": {},
+   "lineage": {
+    "canonical": "https://chain-d.test/hr",
+    "first_published_by": "WWW.Source-One.TEST.",
+    "registrant": "fpb-first.test"
+   }
+  }
+ ],
+ "research": {}
+}

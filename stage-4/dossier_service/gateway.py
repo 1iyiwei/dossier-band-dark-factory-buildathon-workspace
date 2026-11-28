@@ -16,7 +16,7 @@ from web_router import ProviderError, ResearchTimeoutError, WebRouter
 from web_router.exceptions_typed import ExtractFailedError
 
 from .config import Settings
-from .ledger import BudgetExhausted, Ledger
+from .ledger import Ledger
 from .support import FIELDS
 
 SEARCH_COST = 1                # every search is a nimble ``lite`` search

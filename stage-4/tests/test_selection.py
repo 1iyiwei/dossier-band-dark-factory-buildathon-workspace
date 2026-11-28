@@ -1,6 +1,7 @@
 import unittest
 
 from dossier_service.evidence import Evidence, page_kind, published_at
+from dossier_service.lineage import parse_lineage
 from dossier_service.selection import Candidate, field_of
 
 NEW = "2026-02-20T00:00:00+00:00"
@@ -18,7 +19,8 @@ def values(field):
 class SelectionTests(unittest.TestCase):
     def test_no_candidate_is_unknown(self):
         self.assertEqual(field_of([]), {"value": None, "status": "unknown", "true_from": None, "learned_at": None,
-                                         "citations": [], "candidates": []})
+                                         "citations": [], "candidates": [], "origins": [], "corroborated": False,
+                                         "corroborated_since": None})
 
     def test_authority_outranks_recency(self):
         field = field_of([cand("Sam", kind="aggregator", published=NEW), cand("Dana", kind="own", published=OLD),
@@ -74,9 +76,12 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual(page.true_from, "2026-02-20")
 
     def test_page_kind_falls_back_to_host(self):
-        self.assertEqual(page_kind({}, "https://www.acme.test/about", "acme.test"), "own")
-        self.assertEqual(page_kind({"Kind": "blog"}, "https://acme.test.evil.test/", "acme.test"), "aggregator")
-        self.assertEqual(page_kind({"Kind": "filing"}, "https://x.test", "acme.test"), "filing")
+        def kind(header, url):
+            return page_kind(header, url, "acme.test", parse_lineage(header, url))
+
+        self.assertEqual(kind({}, "https://www.acme.test/about"), "own")
+        self.assertEqual(kind({"Kind": "blog"}, "https://acme.test.evil.test/"), "aggregator")
+        self.assertEqual(kind({"Kind": "filing"}, "https://x.test"), "filing")
 
     def test_bad_publication_time_is_none(self):
         self.assertIsNone(published_at({"Published": "2026-02-20"}))

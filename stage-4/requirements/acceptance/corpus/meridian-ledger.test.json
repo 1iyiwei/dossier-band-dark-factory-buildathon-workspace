@@ -1,0 +1,311 @@
+{
+ "domain": "meridian-ledger.test",
+ "names": [
+  "Meridian Ledger"
+ ],
+ "pages": [
+  {
+   "url": "https://meridian-ledger.test/leadership",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": false,
+   "published_at": "2026-01-10T00:00:00Z",
+   "true_from": "2021-04-01",
+   "title": "Leadership",
+   "text": "Dana Ruiz has led Meridian Ledger as chief executive since 2021.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "meridian-ledger.test"
+   }
+  },
+  {
+   "url": "https://meridian-ledger.test/leadership",
+   "kind": "own",
+   "epochs": [
+    1
+   ],
+   "searchable": false,
+   "published_at": "2026-03-25T00:00:00Z",
+   "true_from": "2026-03-20",
+   "title": "Leadership",
+   "text": "Lee Park has led Meridian Ledger as chief executive since 2026.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "meridian-ledger.test"
+   }
+  },
+  {
+   "url": "https://meridian-ledger.test/leadership",
+   "kind": "own",
+   "epochs": [
+    2
+   ],
+   "searchable": false,
+   "published_at": "2026-04-05T00:00:00Z",
+   "true_from": "2026-01-01",
+   "title": "Leadership",
+   "text": "Sam Ortiz is the chief executive of Meridian Ledger.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "meridian-ledger.test"
+   }
+  },
+  {
+   "url": "https://meridian-ledger.test/leadership",
+   "kind": "own",
+   "epochs": [
+    3
+   ],
+   "searchable": false,
+   "published_at": "2026-05-02T00:00:00Z",
+   "true_from": "2026-05-01",
+   "title": "Leadership",
+   "text": "Meridian Ledger is led by its board.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "meridian-ledger.test"
+   }
+  },
+  {
+   "url": "https://meridian-ledger.test/leadership",
+   "kind": "own",
+   "epochs": [
+    4
+   ],
+   "searchable": false,
+   "published_at": null,
+   "true_from": null,
+   "title": "Leadership",
+   "text": "Dana Ruiz has led Meridian Ledger as chief executive since 2021.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "meridian-ledger.test"
+   }
+  },
+  {
+   "url": "https://meridian-ledger.test/team",
+   "kind": "own",
+   "epochs": [
+    0,
+    1,
+    3,
+    4
+   ],
+   "searchable": true,
+   "published_at": "2026-01-10T00:00:00Z",
+   "true_from": "2020-01-01",
+   "title": "Team",
+   "text": "Meridian Ledger employs about 120 people.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "meridian-ledger.test"
+   }
+  },
+  {
+   "url": "https://meridian-ledger.test/team",
+   "kind": "own",
+   "epochs": [
+    2
+   ],
+   "searchable": true,
+   "published_at": "2026-04-05T00:00:00Z",
+   "true_from": "2019-06-01",
+   "title": "Team",
+   "text": "Meridian Ledger employs about 120 people.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "meridian-ledger.test"
+   }
+  },
+  {
+   "url": "https://meridian-ledger.test/history",
+   "kind": "own",
+   "epochs": [
+    2,
+    3,
+    4
+   ],
+   "searchable": true,
+   "published_at": "2026-04-05T00:00:00Z",
+   "true_from": "2026-04-01",
+   "title": "History",
+   "text": "Meridian Ledger was founded in 2003.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "meridian-ledger.test"
+   }
+  },
+  {
+   "url": "https://meridian-ledger.test/exec",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-10T00:00:00Z",
+   "true_from": "2025-09-01",
+   "title": "Executive team",
+   "text": "Ana Silva is the chief financial officer of Meridian Ledger.\nMeridian Ledger CTO: Ben Okafor.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "meridian-ledger.test"
+   }
+  },
+  {
+   "url": "https://meridian-ledger.test/exec",
+   "kind": "own",
+   "epochs": [
+    1
+   ],
+   "searchable": true,
+   "published_at": "2026-03-25T00:00:00Z",
+   "true_from": "2026-03-20",
+   "title": "Executive team",
+   "text": "Ana Silva is the chief financial officer of Meridian Ledger.\nMeridian Ledger CTO: Cho Min.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "meridian-ledger.test"
+   }
+  },
+  {
+   "url": "https://meridian-ledger.test/exec",
+   "kind": "own",
+   "epochs": [
+    2
+   ],
+   "searchable": true,
+   "published_at": "2026-04-05T00:00:00Z",
+   "true_from": "2025-12-01",
+   "title": "Executive team",
+   "text": "Ana Silva is the chief financial officer of Meridian Ledger.\nMeridian Ledger CTO: Cho Min.\nDee Hart is the chief operating officer of Meridian Ledger.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "meridian-ledger.test"
+   }
+  },
+  {
+   "url": "https://meridian-ledger.test/exec",
+   "kind": "own",
+   "epochs": [
+    3
+   ],
+   "searchable": true,
+   "published_at": "2026-05-02T00:00:00Z",
+   "true_from": "2025-10-01",
+   "title": "Executive team",
+   "text": "Ana Silva is the chief financial officer of Meridian Ledger.\nMeridian Ledger CTO: Eli Novak.\nDee Hart is the chief operating officer of Meridian Ledger.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "meridian-ledger.test"
+   }
+  },
+  {
+   "url": "https://meridian-ledger.test/exec",
+   "kind": "own",
+   "epochs": [
+    4
+   ],
+   "searchable": true,
+   "published_at": "2026-06-01T00:00:00Z",
+   "true_from": "2025-09-01",
+   "title": "Executive team",
+   "text": "Ana Silva is the chief financial officer of Meridian Ledger.\nMeridian Ledger CTO: Fay Quinn.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "meridian-ledger.test"
+   }
+  },
+  {
+   "url": "https://bizlistings-hub.test/meridian-ledger",
+   "kind": "aggregator",
+   "epochs": [
+    0,
+    1,
+    2
+   ],
+   "searchable": true,
+   "published_at": "2026-02-20T00:00:00Z",
+   "true_from": "2022-01-01",
+   "title": "Meridian Ledger company data",
+   "text": "Meridian Ledger CEO: Pat Lee.\nMeridian Ledger CFO: Gus Hall.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "bizlistings-hub.test"
+   }
+  }
+ ],
+ "research": {
+  "nimble": {
+   "0": [
+    {
+     "field": "ceo",
+     "value": "Dana Ruiz",
+     "url": "https://meridian-ledger.test/leadership",
+     "excerpt": "Dana Ruiz has led Meridian Ledger as chief executive since 2021."
+    }
+   ],
+   "1": [
+    {
+     "field": "ceo",
+     "value": "Lee Park",
+     "url": "https://meridian-ledger.test/leadership",
+     "excerpt": "Lee Park has led Meridian Ledger as chief executive since 2026."
+    }
+   ],
+   "2": [
+    {
+     "field": "ceo",
+     "value": "Sam Ortiz",
+     "url": "https://meridian-ledger.test/leadership",
+     "excerpt": "Sam Ortiz is the chief executive of Meridian Ledger."
+    }
+   ],
+   "3": [
+    {
+     "field": "ceo",
+     "value": "Dana Ruiz",
+     "url": "https://meridian-ledger.test/leadership",
+     "excerpt": "Meridian Ledger is led by its board."
+    }
+   ],
+   "4": [
+    {
+     "field": "ceo",
+     "value": "Dana Ruiz",
+     "url": "https://meridian-ledger.test/leadership",
+     "excerpt": "Dana Ruiz has led Meridian Ledger as chief executive since 2021."
+    }
+   ]
+  }
+ }
+}

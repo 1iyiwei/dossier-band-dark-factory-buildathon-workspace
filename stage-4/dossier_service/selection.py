@@ -33,6 +33,7 @@ class Candidate:
     retrieved_at: str | None = None
     true_from: str | None = None        # YYYY-MM-DD from which the page says the value holds
     learned_at: str | None = None       # the first build that gathered this value from this page and provider
+    origin: str | None = None           # the domain whose material the page carries (see lineage.py)
 
 
 def same_value(a: object, b: object) -> bool:
@@ -59,17 +60,32 @@ def rank(candidates: list[Candidate]) -> list[Candidate]:
     return sorted(candidates, key=_rank_key)
 
 
-def _candidate_view(candidate: Candidate, selected: Candidate, title: str | None = None) -> dict:
+def _candidate_view(candidate: Candidate, selected: bool, title: str | None = None) -> dict:
     view = {"title": title} if title is not None else {}
     return {**view,
             "value": _canonical(candidate.value), "url": candidate.url, "excerpt": candidate.excerpt,
             "provider": candidate.provider, "kind": candidate.kind, "published_at": candidate.published_at,
             "retrieved_at": candidate.retrieved_at, "true_from": candidate.true_from,
-            "learned_at": candidate.learned_at, "selected": candidate is selected}
+            "learned_at": candidate.learned_at, "origin": candidate.origin, "selected": selected}
+
+
+def origin_keys(members: list[list[Candidate]]) -> dict:
+    """``origins`` and ``corroborated`` of a field whose selected members each have the candidates given.
+
+    ``corroborated_since`` is filled in by the dossier, which knows the builds before this one.
+    """
+    origins = sorted({c.origin for member in members for c in member if c.origin is not None})
+    corroborated = bool(members) and all(len({c.origin for c in member}) >= 2 for member in members)
+    return {"origins": origins, "corroborated": corroborated, "corroborated_since": None}
 
 
 def _citations(candidates: list[Candidate]) -> list[dict]:
     return [{"url": c.url, "excerpt": c.excerpt, "provider": c.provider} for c in candidates]
+
+
+def unknown_view() -> dict:
+    return {"value": None, "status": "unknown", "true_from": None, "learned_at": None,
+            "citations": [], "candidates": [], "origins": [], "corroborated": False, "corroborated_since": None}
 
 
 def field_of(candidates: list[Candidate], learned_at: str | None = None) -> dict:
@@ -79,8 +95,7 @@ def field_of(candidates: list[Candidate], learned_at: str | None = None) -> dict
     """
     ranked = rank(candidates)
     if not ranked:
-        return {"value": None, "status": "unknown", "true_from": None, "learned_at": None,
-                "citations": [], "candidates": []}
+        return unknown_view()
     selected = ranked[0]
     chosen = [c for c in ranked if same_value(c.value, selected.value)]
     return {
@@ -89,7 +104,8 @@ def field_of(candidates: list[Candidate], learned_at: str | None = None) -> dict
         "true_from": selected.true_from,
         "learned_at": learned_at,
         "citations": _citations(chosen),
-        "candidates": [_candidate_view(c, selected) for c in ranked],
+        "candidates": [_candidate_view(c, c is selected) for c in ranked],
+        **origin_keys([chosen]),
     }
 
 
@@ -114,15 +130,15 @@ def executives_of(by_title: dict[str, list[Candidate]], learned_at: str | None =
     """The ``executives`` field: one member per title that has a selected person."""
     chosen = select_by_title(by_title)
     if not chosen:
-        return {"value": None, "status": "unknown", "true_from": None, "learned_at": None,
-                "citations": [], "candidates": []}
-    citations, candidates = [], []
+        return unknown_view()
+    citations, candidates, members = [], [], []
     contested = False
     for title, selected, ranked in chosen:
         same = [c for c in ranked if same_value(c.value, selected.value)]
         contested = contested or len(same) != len(ranked)
         citations += _citations(same)
-        candidates += [_candidate_view(c, selected, title) for c in ranked]
+        members.append(same)
+        candidates += [_candidate_view(c, c is selected, title) for c in ranked]
     return {
         "value": [{"title": title, "name": _canonical(selected.value)} for title, selected, _ in chosen],
         "status": "contested" if contested else "known",
@@ -130,11 +146,35 @@ def executives_of(by_title: dict[str, list[Candidate]], learned_at: str | None =
         "learned_at": learned_at,
         "citations": citations,
         "candidates": candidates,
+        **origin_keys(members),
     }
+
+
+def investors_of(candidates: list[Candidate], learned_at: str | None = None) -> dict:
+    """The ``investors`` field: its members are the names that an own or filing page states or two origins state."""
+    ranked = rank(candidates)
+    by_name: dict[str, list[Candidate]] = {}
+    for candidate in ranked:
+        by_name.setdefault(candidate.value, []).append(candidate)
+    members = sorted(name for name, named in by_name.items()
+                     if any(c.kind in ("own", "filing") for c in named) or len({c.origin for c in named}) >= 2)
+    view = unknown_view()
+    view["candidates"] = [_candidate_view(c, c.value in members) for c in ranked]
+    if not members:
+        return view
+    named = [by_name[name] for name in members]
+    firsts = [min((c.true_from for c in group if c.true_from is not None), default=None) for group in named]
+    view.update({
+        "value": members, "status": "known", "learned_at": learned_at,
+        "true_from": None if any(first is None for first in firsts) else max(firsts),
+        "citations": [citation for group in named for citation in _citations(group)],
+        **origin_keys(named),
+    })
+    return view
 
 
 def candidate_of(entry: dict) -> Candidate:
     """A candidate from its API (or exported) form."""
     return Candidate(entry["value"], entry["url"], entry["excerpt"], entry["provider"],
                      entry["kind"], entry["published_at"], entry.get("retrieved_at"),
-                     entry.get("true_from"), entry.get("learned_at"))
+                     entry.get("true_from"), entry.get("learned_at"), entry.get("origin"))

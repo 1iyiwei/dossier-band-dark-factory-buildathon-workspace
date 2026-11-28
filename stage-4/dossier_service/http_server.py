@@ -9,6 +9,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, unquote_plus, urlsplit
 
 from .clock import parse_timestamp
+from .batches import MAX_BATCH_DOMAINS, MAX_BUDGET, MIN_BUDGET
+from .codec import is_int
 from .domains import parse_domain
 from .errors import ApiError, malformed, validation_failed
 from .store import Store
@@ -169,6 +171,7 @@ class Handler(BaseHTTPRequestHandler):
             ("POST", "/auth/signup"): self._signup,
             ("POST", "/auth/login"): self._login,
             ("POST", "/dossiers"): self._create_dossier,
+            ("POST", "/batches"): self._create_batch,
             ("GET", "/dossiers"): lambda: self._list_dossiers(url.query),
             ("GET", "/changes"): lambda: self._list_changes(url.query),
         }
@@ -184,6 +187,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._get_dossier(unquote(rest), url.query)
             if method == "POST" and rest.endswith("/refresh"):
                 return self._refresh_dossier(path, unquote(rest[:-len("/refresh")]))
+        if method == "GET" and path.startswith("/batches/") and len(path) > len("/batches/"):
+            return self._get_batch(unquote(path[len("/batches/"):]))
         raise ApiError(404, "not_found", "no such route")
 
     def _browser_page(self, path: str) -> Document | None:
@@ -276,6 +281,24 @@ class Handler(BaseHTTPRequestHandler):
         fingerprint = json.dumps({"domain": body["domain"]} if "domain" in body else {}, sort_keys=True)
         return store.idempotent(user_id, "POST", urlsplit(self.path).path, key, fingerprint, action)
 
+    def _create_batch(self):
+        user_id = self._user_id()
+        key = self._idempotency_key()
+        body = self._json_object()
+        self._check_key_length(key)
+        store = self.server.store
+
+        def action():
+            domains, budget = _batch_request(body)
+            return store.start_batch(user_id, domains, budget)
+
+        fingerprint = json.dumps({name: body[name] for name in ("domains", "budget_units") if name in body},
+                                 sort_keys=True)
+        return store.idempotent(user_id, "POST", urlsplit(self.path).path, key, fingerprint, action)
+
+    def _get_batch(self, batch_id: str):
+        return 200, self.server.store.get_batch(self._user_id(), batch_id)
+
     def _refresh_dossier(self, raw_path: str, raw_domain: str):
         user_id = self._user_id()
         key = self._idempotency_key()
@@ -328,6 +351,29 @@ class Handler(BaseHTTPRequestHandler):
         offset = _int_param(params, "offset", 0, 0, None)
         q = params.get("q", [""])[0]
         return 200, self.server.store.list_dossiers(q, limit, offset)
+
+
+def _batch_request(body: dict) -> tuple[list[str], int]:
+    """The normalised domains and the budget of a ``POST /batches`` body, or the error that refuses it."""
+    domains = body.get("domains")
+    if domains is not None and not isinstance(domains, list):
+        raise malformed("domains must be a list")
+    if not domains or len(domains) > MAX_BATCH_DOMAINS:
+        raise validation_failed(f"domains must hold 1 to {MAX_BATCH_DOMAINS} entries")
+    normalised = []
+    for raw in domains:
+        if not isinstance(raw, str):
+            raise malformed("each domain must be a string")
+        domain = parse_domain(raw)
+        if domain is None:
+            raise validation_failed(f"{raw!r} is not a valid host name")
+        normalised.append(domain)
+    if len(set(normalised)) != len(normalised):
+        raise validation_failed("domains must be distinct after normalisation")
+    budget = body.get("budget_units")
+    if not is_int(budget) or not MIN_BUDGET <= budget <= MAX_BUDGET:
+        raise validation_failed(f"budget_units must be an integer from {MIN_BUDGET} to {MAX_BUDGET}")
+    return normalised, budget
 
 
 def _raw_param(query: str, name: str) -> str | None:

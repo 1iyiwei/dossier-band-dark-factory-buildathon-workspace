@@ -1,0 +1,192 @@
+{
+ "domain": "northwind-optics.test",
+ "names": [
+  "Northwind Optics"
+ ],
+ "pages": [
+  {
+   "url": "https://northwind-optics.test/about",
+   "kind": "own",
+   "epochs": [
+    0,
+    1
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "About Northwind Optics",
+   "text": "Northwind Optics designs lenses for medical imaging devices.\nNorthwind Optics is headquartered in Lisbon.\nNorthwind Optics was founded in 2009.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "northwind-optics.test"
+   }
+  },
+  {
+   "url": "https://mirror-archive.test/northwind-optics/about",
+   "kind": "aggregator",
+   "epochs": [
+    0,
+    1
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "Northwind Optics (mirror)",
+   "text": "Northwind Optics designs lenses for medical imaging devices.\nNorthwind Optics is headquartered in Lisbon.\nNorthwind Optics was founded in 2009.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": "northwind-optics.test",
+    "registrant": "mirror-archive.test"
+   }
+  },
+  {
+   "url": "https://northwind-optics.test/legal",
+   "kind": "filing",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "Registration",
+   "text": "The legal name of Northwind Optics is Northwind Optics, Inc.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "northwind-optics.test"
+   }
+  },
+  {
+   "url": "https://northwind-optics.test/leadership",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "Leadership",
+   "text": "Mara Voss has led Northwind Optics as chief executive since 2021.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "northwind-optics.test"
+   }
+  },
+  {
+   "url": "https://northwind-optics.test/leadership",
+   "kind": "own",
+   "epochs": [
+    1
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "Leadership",
+   "text": "Tomas Klein has led Northwind Optics as chief executive since 2026.\nMara Voss is the former CEO of Northwind Optics.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "northwind-optics.test"
+   }
+  },
+  {
+   "url": "https://northwind-optics.test/team",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "Team",
+   "text": "Northwind Optics employs about 120 people across three offices.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "northwind-optics.test"
+   }
+  },
+  {
+   "url": "https://northwind-optics.test/team",
+   "kind": "own",
+   "epochs": [
+    1
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "Team",
+   "text": "Northwind Optics employs roughly 240 people across three offices.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "northwind-optics.test"
+   }
+  },
+  {
+   "url": "https://wirecast-daily.test/northwind-raises",
+   "kind": "news",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "Northwind raises",
+   "text": "Northwind Optics has raised $18M in total funding.\nNorthwind Optics opened an office in Porto.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "wirecast-daily.test"
+   }
+  },
+  {
+   "url": "https://wirecast-daily.test/northwind-raises",
+   "kind": "news",
+   "epochs": [
+    1
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "Northwind raises",
+   "text": "Northwind Optics has raised $25M in total funding.\nNorthwind Optics opened an office in Porto.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "wirecast-daily.test"
+   }
+  }
+ ],
+ "research": {
+  "nimble": {
+   "0": [
+    {
+     "field": "ceo",
+     "value": "Mara Voss",
+     "url": "https://northwind-optics.test/leadership",
+     "excerpt": "Mara Voss has led Northwind Optics as chief executive since 2021."
+    }
+   ],
+   "1": [
+    {
+     "field": "ceo",
+     "value": "Tomas Klein",
+     "url": "https://northwind-optics.test/leadership",
+     "excerpt": "Tomas Klein has led Northwind Optics as chief executive since 2026."
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,135 @@
+{
+ "domain": "ashgrove-labs.test",
+ "names": [
+  "Ashgrove Labs"
+ ],
+ "pages": [
+  {
+   "url": "https://ashgrove-labs.test/about",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-10T00:00:00Z",
+   "true_from": null,
+   "title": "About Ashgrove Labs",
+   "text": "The legal name of Ashgrove Labs is Ashgrove Labs, Inc.\nAshgrove Labs was founded in 2011.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "ashgrove-labs.test"
+   }
+  },
+  {
+   "url": "https://ashgrove-labs.test/registry",
+   "kind": "filing",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-10T01:00:00+01:00",
+   "true_from": null,
+   "title": "Registry entry",
+   "text": "Ashgrove Labs was incorporated in 2010.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "ashgrove-labs.test"
+   }
+  },
+  {
+   "url": "https://bizdata-hub.test/ashgrove-labs",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-20T00:00:00Z",
+   "true_from": null,
+   "title": "Ashgrove Labs company data",
+   "text": "The registered name of Ashgrove Labs is Ashgrove Labs Holdings Ltd.\nAshgrove Labs is headquartered in Zagreb.\nAshgrove Labs has its head office in Århus.\nAshgrove Labs raised $9M in seed funding.\nAshgrove Labs raised $10M in Series A funding.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "bizdata-hub.test"
+   }
+  },
+  {
+   "url": "https://wirecast-daily.test/ashgrove-profile",
+   "kind": "news",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-28T00:00:00Z",
+   "true_from": null,
+   "title": "Ashgrove profile",
+   "text": "Ashgrove Labs CEO: Pat Lee.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "wirecast-daily.test"
+   }
+  },
+  {
+   "url": "https://ashgrove-labs.test/team",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-10T00:00:00Z",
+   "true_from": null,
+   "title": "Team",
+   "text": "Ashgrove Labs CEO: Sam Ortiz.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "ashgrove-labs.test"
+   }
+  },
+  {
+   "url": "https://ashgrove-labs.test/careers",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": null,
+   "true_from": null,
+   "title": "Careers",
+   "text": "Ashgrove Labs employs about 120 people.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "ashgrove-labs.test"
+   }
+  },
+  {
+   "url": "https://ashgrove-labs.test/jobs",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2020-01-01T00:00:00Z",
+   "true_from": null,
+   "title": "Jobs",
+   "text": "Dana Ruiz has led Ashgrove Labs as chief executive since 2021.\nAshgrove Labs employs about 400 people.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "ashgrove-labs.test"
+   }
+  }
+ ],
+ "research": {}
+}

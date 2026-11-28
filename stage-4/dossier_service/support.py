@@ -13,8 +13,9 @@ from .domains import company_name
 FIELDS = ("legal_name", "hq_city", "ceo", "founded_year", "headcount_range", "funding_total")
 EXEC_TITLES = ("cfo", "coo", "cto")
 EXECUTIVES = "executives"
-ALL_FIELDS = FIELDS + (EXECUTIVES,)
-SLOTS = FIELDS + EXEC_TITLES         # what candidates are kept under: the six fields and each executive title
+INVESTORS = "investors"
+ALL_FIELDS = FIELDS + (EXECUTIVES, INVESTORS)
+SLOTS = FIELDS + EXEC_TITLES + (INVESTORS,)   # what candidates are kept under: the six fields, each executive title, investors
 
 PHRASES = {
     "legal_name": ("legal name", "registered name", "registered as", "registered company",
@@ -28,7 +29,10 @@ PHRASES = {
     "cfo": ("chief financial officer", "CFO"),
     "coo": ("chief operating officer", "COO"),
     "cto": ("chief technology officer", "CTO"),
+    "investors": ("investor", "investors", "led by", "backed by", "participated"),
 }
+LEAD_PHRASES = ("led by", "backed by")           # the phrases after which an investor name needs no suffix
+INVESTOR_SUFFIXES = ("Ventures", "Capital", "Partners", "Fund", "Investments", "Holdings", "Equity")
 
 NEGATING = ("in talks to", "plans to", "planning to", "wants to", "expects to", "hopes to",
             "aims to", "seeking", "could", "would", "might", "reportedly", "rumoured", "former",
@@ -299,6 +303,38 @@ def _people(text: str, domain: str, title: str) -> list[str]:
     return values
 
 
+def investor_names(text: str, domain: str) -> list[str]:
+    """Investor names in ``text``, in order of appearance: capitalised runs ending in an investor suffix,
+    and, when the text holds an amount, the run right after ``led by`` or ``backed by``."""
+    scrubbed = text
+    removable = [company_name(domain), *sorted(PHRASES[INVESTORS], key=len, reverse=True)]
+    for phrase in removable:
+        scrubbed = _phrase_regex(phrase).sub(lambda match: "\x00" * len(match.group()), scrubbed)
+    after_lead = set()
+    if _amounts(text):
+        for phrase in LEAD_PHRASES:
+            after_lead.update(m.end() + 1 for m in phrase_matches(text, phrase) if text.startswith(" ", m.end()))
+    names, run = [], []
+
+    def flush() -> None:
+        if run:
+            name = scrubbed[run[0][0]:run[-1][1]]
+            if (len(run) >= 2 and name.rsplit(" ", 1)[-1] in INVESTOR_SUFFIXES) or run[0][0] in after_lead:
+                names.append(name)
+        run.clear()
+
+    for start, end, word in _words(scrubbed):
+        if not is_capitalised(word):
+            flush()
+        elif run and scrubbed[run[-1][1]:start] != " ":
+            flush()
+            run.append((start, end))
+        else:
+            run.append((start, end))
+    flush()
+    return names
+
+
 def _years(text: str) -> list[int]:
     amounts = _amounts(text)
     return [int(n.text) for n in _numbers(text)
@@ -338,6 +374,17 @@ def names_company(text: str, domain: str) -> bool:
     return bool(phrase_matches(text, domain) or phrase_matches(text, company_name(domain)))
 
 
+def supported_investors(excerpt: str, domain: str) -> list[str]:
+    """The investor names ``excerpt`` supports for the company at ``domain``: each name it contains."""
+    if not 1 <= len(excerpt) <= 500 or excerpt != collapse_whitespace(excerpt):
+        return []
+    if not is_single_sentence(excerpt) or not names_company(excerpt, domain):
+        return []
+    if not has_any_phrase(excerpt, PHRASES[INVESTORS]) or has_any_phrase(excerpt, NEGATING):
+        return []
+    return list(dict.fromkeys(investor_names(excerpt, domain)))
+
+
 def supported_value(field: str, excerpt: str, domain: str):
     """The value ``excerpt`` supports for ``field`` of the company at ``domain``, else None."""
     if not 1 <= len(excerpt) <= 500 or excerpt != collapse_whitespace(excerpt):
@@ -354,3 +401,11 @@ def supported_value(field: str, excerpt: str, domain: str):
     if not values or any(v != values[0] for v in values):
         return None
     return values[0]
+
+
+def slot_values(slot: str, excerpt: str, domain: str) -> list:
+    """Every value ``excerpt`` supports under candidate slot ``slot``: one for a field or title, any number of investors."""
+    if slot == INVESTORS:
+        return supported_investors(excerpt, domain)
+    value = supported_value(slot, excerpt, domain)
+    return [] if value is None else [value]

@@ -1,0 +1,153 @@
+{
+ "domain": "lumen-forge.test",
+ "names": [
+  "Lumen Forge"
+ ],
+ "pages": [
+  {
+   "url": "https://lumen-forge.test/about",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-10T00:00:00Z",
+   "true_from": "2025-01-01",
+   "title": "About",
+   "text": "Lumen Forge CEO: Rhea Marsh.\nLumen Forge is headquartered in Basel.\nLumen Forge was founded in 2012.\nThe legal name of Lumen Forge is Lumen Forge AG.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "lumen-forge.test"
+   }
+  },
+  {
+   "url": "https://copycat-data.test/lumen-forge",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-01T00:00:00Z",
+   "true_from": null,
+   "title": "Lumen Forge company data",
+   "text": "Lumen Forge CEO: Rhea Marsh.\nLumen Forge is headquartered in Basel.",
+   "facts": {},
+   "lineage": {
+    "canonical": "https://lumen-forge.test/about",
+    "first_published_by": null,
+    "registrant": "copycat-data.test"
+   }
+  },
+  {
+   "url": "https://scrapehub.test/lf",
+   "kind": "aggregator",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-03T00:00:00Z",
+   "true_from": null,
+   "title": "LF",
+   "text": "Lumen Forge CEO: Rhea Marsh.",
+   "facts": {},
+   "lineage": {
+    "canonical": "https://copycat-data.test/lumen-forge",
+    "first_published_by": null,
+    "registrant": "scrapehub.test"
+   }
+  },
+  {
+   "url": "https://lumen-forge-hq.test/about",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-02-05T00:00:00Z",
+   "true_from": null,
+   "title": "Lumen Forge",
+   "text": "Lumen Forge is headquartered in Basel.\nLumen Forge was founded in 2012.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "parked-domains.test"
+   }
+  },
+  {
+   "url": "https://wirecast-daily.test/lumen-raise",
+   "kind": "news",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-20T00:00:00Z",
+   "true_from": "2026-01-20",
+   "title": "Lumen Forge raises",
+   "text": "Lumen Forge has raised $12M in total funding.\nLumen Forge was founded in 2012.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "wirecast-daily.test"
+   }
+  },
+  {
+   "url": "https://localpress.test/lumen-raise",
+   "kind": "news",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-22T00:00:00Z",
+   "true_from": "2026-01-20",
+   "title": "Lumen Forge raises",
+   "text": "Lumen Forge has raised $12M in total funding.\nLumen Forge was founded in 2012.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": "wirecast-daily.test",
+    "registrant": "localpress.test"
+   }
+  },
+  {
+   "url": "https://tickerpost.test/lumen",
+   "kind": "news",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-25T00:00:00Z",
+   "true_from": null,
+   "title": "Lumen Forge funding",
+   "text": "Lumen Forge has raised $12M in total funding.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "tickerpost.test"
+   }
+  },
+  {
+   "url": "https://registry-open.test/lumen-forge",
+   "kind": "filing",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-05T00:00:00Z",
+   "true_from": null,
+   "title": "Registry entry",
+   "text": "The legal name of Lumen Forge is Lumen Forge AG.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "registry-open.test"
+   }
+  }
+ ],
+ "research": {}
+}

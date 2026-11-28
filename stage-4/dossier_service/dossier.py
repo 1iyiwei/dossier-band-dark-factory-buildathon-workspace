@@ -1,6 +1,6 @@
 """One dossier: its builds, the selected value of every field, the history of those values and the changes.
 
-A completed build turns the candidates it gathered into the dossier's seven fields. Every field
+A completed build turns the candidates it gathered into the dossier's eight fields. Every field
 whose selected value differs from the one before gets a history entry, and a change or correction
 also a feed entry (``Dossier.complete_build`` returns those for the store to number).
 """
@@ -10,16 +10,15 @@ import copy
 from dataclasses import dataclass, field, replace
 from datetime import datetime
 
-from .selection import Candidate, executives_of, field_of, latest_true_from, rank, same_value, select_by_title
-from .support import ALL_FIELDS, EXEC_TITLES, EXECUTIVES, FIELDS, SLOTS
+from .corroboration import corroborated_since
+from .selection import (Candidate, executives_of, field_of, investors_of, latest_true_from, rank, same_value,
+                        select_by_title, unknown_view)
+from .support import ALL_FIELDS, EXEC_TITLES, EXECUTIVES, FIELDS, INVESTORS, SLOTS
 from .versions import PageVersion, holding
-
-UNKNOWN_VALUE = {"value": None, "status": "unknown", "true_from": None, "learned_at": None,
-                 "citations": [], "candidates": []}
 
 
 def unknown_fields() -> dict[str, dict]:
-    return {name: copy.deepcopy(UNKNOWN_VALUE) for name in ALL_FIELDS}
+    return {name: unknown_view() for name in ALL_FIELDS}
 
 
 def iso(moment: datetime | None) -> str | None:
@@ -33,14 +32,15 @@ class BuildRecord:
     outcome: str                                # "ready" or "failed"
     spent: int
     pages: list[PageVersion] = field(default_factory=list)
-    fields: dict[str, dict] | None = None       # the seven fields as the build left them (ready builds)
+    fields: dict[str, dict] | None = None       # the eight fields as the build left them (ready builds)
 
 
 @dataclass
 class Build:
-    """One running build of one dossier."""
+    """One running build of one dossier; ``batch_id`` names the batch whose budget it shares, if any."""
     epoch: int
     time: datetime
+    batch_id: str | None = None
 
 
 @dataclass
@@ -55,6 +55,8 @@ class Dossier:
     outcome: str = "failed"          # outcome of the latest finished build
     build: Build | None = None
     spent_before_build: int = 0
+    inflight: int = 0                # units of the running build's provider calls not yet answered
+    interrupted: dict | None = None  # a build a restart found running: its time, batch and what it had spent
     _first_seen: dict[tuple, str] = field(default_factory=dict)
 
     @property
@@ -75,8 +77,9 @@ class Dossier:
         first = not self.has_ready_build()
         fields: dict[str, dict] = {}
         entries: dict[str, str] = {}
+        ready = [(record.time.isoformat(), record.fields) for record in self.builds if record.outcome == "ready"]
         for name in ALL_FIELDS:
-            new = executives_of(by_slot) if name == EXECUTIVES else field_of(by_slot[name])
+            new = _field_view(name, by_slot)
             if first:
                 kind = "initial" if new["value"] is not None else None
             else:
@@ -85,6 +88,7 @@ class Dossier:
                 entries[name] = kind
             if new["value"] is not None:      # an unknown field has no learned_at, whatever its history says
                 new["learned_at"] = moment if kind is not None else self.fields[name]["learned_at"]
+            new["corroborated_since"] = corroborated_since(name, [(t, f[name]) for t, f in ready] + [(moment, new)])
             fields[name] = new
         feed = []
         for name, kind in entries.items():
@@ -100,6 +104,22 @@ class Dossier:
         self.researched_at = time
         self.outcome = "ready"
         return feed
+
+    def refresh_corroboration(self) -> None:
+        """Derive every ready build's ``origins`` and ``corroborated_since`` again from the builds' candidates.
+
+        Used for state imported from an export that predates them or records them unchecked.
+        """
+        ready = [record for record in self.builds if record.outcome == "ready"]
+        for index, record in enumerate(ready):
+            for name in ALL_FIELDS:
+                view = record.fields[name]
+                members = _member_candidates(name, view)
+                view.update(origin_keys_of(members))
+                view["corroborated_since"] = corroborated_since(
+                    name, [(r.time.isoformat(), r.fields[name]) for r in ready[:index + 1]])
+        if ready:
+            self.fields = copy.deepcopy(ready[-1].fields)
 
     def complete_failed_build(self, time: datetime, spent: int) -> None:
         self.builds.append(BuildRecord(time, "failed", spent))
@@ -137,6 +157,8 @@ class Dossier:
         for name in FIELDS:
             ranked = rank(found[name])
             values[name] = _value_view(ranked[0], ranked) if ranked else _no_value()
+        investors = investors_of(found[INVESTORS])
+        values[INVESTORS] = {key: investors[key] for key in ("value", "true_from", "citations")}
         chosen = select_by_title(found)
         if chosen:
             selected = [pick for _, pick, _ in chosen]
@@ -147,6 +169,33 @@ class Dossier:
         else:
             values[EXECUTIVES] = _no_value()
         return values
+
+
+def _field_view(name: str, by_slot: dict[str, list[Candidate]]) -> dict:
+    if name == EXECUTIVES:
+        return executives_of(by_slot)
+    if name == INVESTORS:
+        return investors_of(by_slot[INVESTORS])
+    return field_of(by_slot[name])
+
+
+def _member_candidates(name: str, view: dict) -> list[list[dict]]:
+    """The candidates (as views) of each member of a field's value."""
+    value = view["value"]
+    if value is None:
+        return []
+    candidates = view["candidates"]
+    if name == EXECUTIVES:
+        return [[c for c in candidates if c["title"] == m["title"] and c["value"].strip() == m["name"]] for m in value]
+    if name == INVESTORS:
+        return [[c for c in candidates if c["value"] == member] for member in value]
+    return [[c for c in candidates if same_value(c["value"], value)]]
+
+
+def origin_keys_of(members: list[list[dict]]) -> dict:
+    """``origins`` and ``corroborated`` from candidates as the API shows them."""
+    return {"origins": sorted({c["origin"] for member in members for c in member}),
+            "corroborated": bool(members) and all(len({c["origin"] for c in member}) >= 2 for member in members)}
 
 
 def _identity(slot: str, candidate: Candidate) -> tuple:
@@ -170,6 +219,8 @@ def entry_type(name: str, earlier: dict, new: dict) -> str | None:
     """``change`` or ``correction`` when ``new`` differs from ``earlier`` for field ``name``, else None."""
     if name == EXECUTIVES:
         return _executives_entry_type(earlier, new)
+    if name == INVESTORS:
+        return _investors_entry_type(earlier, new)
     if same_value(earlier["value"], new["value"]):
         return None
     both_present = earlier["value"] is not None and new["value"] is not None
@@ -197,3 +248,18 @@ def _executives_entry_type(earlier: dict, new: dict) -> str | None:
         return None
     corrections = all(t in before and t in after and _is_correction(before[t][1], after[t][1]) for t in differing)
     return "correction" if corrections else "change"
+
+
+def _investors_entry_type(earlier: dict, new: dict) -> str | None:
+    """A name that left is never a correction; a name that arrived is one when it holds no later than the earlier value."""
+    before, after = set(earlier["value"] or []), set(new["value"] or [])
+    if before == after:
+        return None
+    if before - after or earlier["true_from"] is None:
+        return "change"
+    arrived = {name: None for name in after - before}
+    for candidate in new["candidates"]:
+        if candidate["selected"] and candidate["value"] in arrived and candidate["true_from"] is not None:
+            known = arrived[candidate["value"]]
+            arrived[candidate["value"]] = candidate["true_from"] if known is None else min(known, candidate["true_from"])
+    return "correction" if all(_is_correction(earlier["true_from"], found) for found in arrived.values()) else "change"

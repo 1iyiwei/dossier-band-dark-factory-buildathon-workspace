@@ -1,0 +1,135 @@
+{
+ "domain": "kindred-mark.test",
+ "names": [
+  "Kindred Mark"
+ ],
+ "pages": [
+  {
+   "url": "https://www.kindred-mark.test/about",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-10T00:00:00Z",
+   "true_from": null,
+   "title": "About",
+   "text": "Kindred Mark CEO: Hana Lowe.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "kindred-mark.test"
+   }
+  },
+  {
+   "url": "https://registry-one.test/km",
+   "kind": "filing",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-11T00:00:00Z",
+   "true_from": null,
+   "title": "Registry",
+   "text": "Kindred Mark CEO: Ivo Park.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "WWW.Registry-One.TEST."
+   }
+  },
+  {
+   "url": "https://sloppy-host.test/km",
+   "kind": "news",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-12T00:00:00Z",
+   "true_from": null,
+   "title": "News",
+   "text": "Kindred Mark CEO: Jon Reed.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "https://sloppy-host.test/km"
+   }
+  },
+  {
+   "url": "https://kindredmark-corp.test/about",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-13T00:00:00Z",
+   "true_from": null,
+   "title": "Kindred Mark",
+   "text": "Kindred Mark CEO: Kay Shaw.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "hosting-farm.test"
+   }
+  },
+  {
+   "url": "https://partner-site.test/km",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-14T00:00:00Z",
+   "true_from": null,
+   "title": "Partner",
+   "text": "Kindred Mark CEO: Lia Cruz.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "partner-site.test"
+   }
+  },
+  {
+   "url": "https://kindred-mark.test/team",
+   "kind": null,
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-15T00:00:00Z",
+   "true_from": null,
+   "title": "Team",
+   "text": "Kindred Mark CEO: Max Dunn.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "kindred-mark.test"
+   }
+  },
+  {
+   "url": "https://kindred-mark.test/partner-copy",
+   "kind": null,
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-16T00:00:00Z",
+   "true_from": null,
+   "title": "Partner copy",
+   "text": "Kindred Mark CEO: Nia Ortiz.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "other-owner.test"
+   }
+  }
+ ],
+ "research": {}
+}

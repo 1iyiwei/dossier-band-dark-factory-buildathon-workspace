@@ -1,0 +1,407 @@
+{
+ "domain": "prism-harbor.test",
+ "names": [
+  "Prism Harbor"
+ ],
+ "pages": [
+  {
+   "url": "https://prism-harbor.test/leadership",
+   "kind": "own",
+   "epochs": [
+    0
+   ],
+   "searchable": true,
+   "published_at": "2026-01-02T00:00:00Z",
+   "true_from": "2025-01-01",
+   "title": "Leadership",
+   "text": "Ana Pike has led Prism Harbor as chief executive since 2021.\nPrism Harbor CFO: Cleo Dunn.\nPrism Harbor CTO: Dev Shah.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "prism-harbor.test"
+   }
+  },
+  {
+   "url": "https://prism-harbor.test/leadership",
+   "kind": "own",
+   "epochs": [
+    1
+   ],
+   "searchable": true,
+   "published_at": "2026-02-02T00:00:00Z",
+   "true_from": "2025-01-01",
+   "title": "Leadership",
+   "text": "Ana Pike has led Prism Harbor as chief executive since 2021.\nPrism Harbor CFO: Cleo Dunn.\nPrism Harbor CTO: Dev Shah.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "prism-harbor.test"
+   }
+  },
+  {
+   "url": "https://prism-harbor.test/leadership",
+   "kind": "own",
+   "epochs": [
+    2
+   ],
+   "searchable": true,
+   "published_at": "2026-03-02T00:00:00Z",
+   "true_from": "2025-01-01",
+   "title": "Leadership",
+   "text": "Ana Pike has led Prism Harbor as chief executive since 2021.\nPrism Harbor CFO: Cleo Dunn.\nPrism Harbor CTO: Dev Shah.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "prism-harbor.test"
+   }
+  },
+  {
+   "url": "https://prism-harbor.test/leadership",
+   "kind": "own",
+   "epochs": [
+    3
+   ],
+   "searchable": true,
+   "published_at": "2026-04-02T00:00:00Z",
+   "true_from": "2025-01-01",
+   "title": "Leadership",
+   "text": "Bo Chan has led Prism Harbor as chief executive since 2026.\nPrism Harbor CFO: Cleo Dunn.\nPrism Harbor CTO: Dev Shah.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "prism-harbor.test"
+   }
+  },
+  {
+   "url": "https://prism-harbor.test/leadership",
+   "kind": "own",
+   "epochs": [
+    4
+   ],
+   "searchable": true,
+   "published_at": "2026-05-02T00:00:00Z",
+   "true_from": "2025-01-01",
+   "title": "Leadership",
+   "text": "Bo Chan has led Prism Harbor as chief executive since 2026.\nPrism Harbor CFO: Cleo Dunn.\nPrism Harbor CTO: Dev Shah.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "prism-harbor.test"
+   }
+  },
+  {
+   "url": "https://prism-harbor.test/leadership",
+   "kind": "own",
+   "epochs": [
+    5
+   ],
+   "searchable": true,
+   "published_at": "2026-06-02T00:00:00Z",
+   "true_from": "2025-01-01",
+   "title": "Leadership",
+   "text": "Ana Pike has led Prism Harbor as chief executive since 2021.\nPrism Harbor CFO: Cleo Dunn.\nPrism Harbor CTO: Eli Novak.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "prism-harbor.test"
+   }
+  },
+  {
+   "url": "https://prism-harbor.test/about",
+   "kind": "own",
+   "epochs": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "searchable": true,
+   "published_at": "2026-01-02T00:00:00Z",
+   "true_from": "2024-05-02",
+   "title": "About",
+   "text": "Prism Harbor is backed by Northwind Ventures.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "prism-harbor.test"
+   }
+  },
+  {
+   "url": "https://prism-harbor.test/about",
+   "kind": "own",
+   "epochs": [
+    4
+   ],
+   "searchable": true,
+   "published_at": "2026-05-02T00:00:00Z",
+   "true_from": "2024-05-02",
+   "title": "About",
+   "text": "Prism Harbor builds engineering software.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "prism-harbor.test"
+   }
+  },
+  {
+   "url": "https://prism-harbor.test/about",
+   "kind": "own",
+   "epochs": [
+    5
+   ],
+   "searchable": true,
+   "published_at": "2026-06-02T00:00:00Z",
+   "true_from": "2026-01-01",
+   "title": "About",
+   "text": "Prism Harbor is backed by Delta Equity.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "prism-harbor.test"
+   }
+  },
+  {
+   "url": "https://registry-open.test/prism-harbor",
+   "kind": "filing",
+   "epochs": [
+    1
+   ],
+   "searchable": true,
+   "published_at": "2026-02-02T00:00:00Z",
+   "true_from": "2025-01-01",
+   "title": "Registry",
+   "text": "Prism Harbor CEO: Ana Pike.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "registry-open.test"
+   }
+  },
+  {
+   "url": "https://registry-open.test/prism-harbor-officers",
+   "kind": "filing",
+   "epochs": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "searchable": true,
+   "published_at": "2026-02-03T00:00:00Z",
+   "true_from": "2025-01-01",
+   "title": "Registry officers",
+   "text": "Prism Harbor CFO: Cleo Dunn.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "registry-open.test"
+   }
+  },
+  {
+   "url": "https://registry-open.test/prism-investors",
+   "kind": "filing",
+   "epochs": [
+    3,
+    4,
+    5
+   ],
+   "searchable": true,
+   "published_at": "2026-04-02T00:00:00Z",
+   "true_from": "2023-01-01",
+   "title": "Registry investors",
+   "text": "Cedar Capital is an investor in Prism Harbor.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "registry-open.test"
+   }
+  },
+  {
+   "url": "https://wirecast-daily.test/prism-funding",
+   "kind": "news",
+   "epochs": [
+    0,
+    1
+   ],
+   "searchable": true,
+   "published_at": "2026-01-20T00:00:00Z",
+   "true_from": "2025-03-01",
+   "title": "Prism funding",
+   "text": "Prism Harbor has raised $12M in total funding.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "wirecast-daily.test"
+   }
+  },
+  {
+   "url": "https://localpress.test/prism-funding",
+   "kind": "news",
+   "epochs": [
+    1
+   ],
+   "searchable": true,
+   "published_at": "2026-02-21T00:00:00Z",
+   "true_from": "2025-03-01",
+   "title": "Prism funding",
+   "text": "Prism Harbor has raised $12M in total funding.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": "wirecast-daily.test",
+    "registrant": "localpress.test"
+   }
+  },
+  {
+   "url": "https://tickerpost.test/prism",
+   "kind": "news",
+   "epochs": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "searchable": true,
+   "published_at": "2026-03-05T00:00:00Z",
+   "true_from": "2025-03-01",
+   "title": "Prism funding",
+   "text": "Prism Harbor has raised $12M in total funding.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "tickerpost.test"
+   }
+  },
+  {
+   "url": "https://tickerpost.test/prism-more",
+   "kind": "news",
+   "epochs": [
+    5
+   ],
+   "searchable": true,
+   "published_at": "2026-06-05T00:00:00Z",
+   "true_from": "2026-01-01",
+   "title": "Prism backers",
+   "text": "Prism Harbor is backed by Delta Equity.\nCedar Capital is an investor in Prism Harbor.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "tickerpost.test"
+   }
+  },
+  {
+   "url": "https://wirecast-daily.test/prism-investors",
+   "kind": "news",
+   "epochs": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "searchable": true,
+   "published_at": "2026-02-20T00:00:00Z",
+   "true_from": "2025-02-01",
+   "title": "Prism investors",
+   "text": "Bluebird Capital is an investor in Prism Harbor.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "wirecast-daily.test"
+   }
+  },
+  {
+   "url": "https://localpress.test/prism-investors",
+   "kind": "news",
+   "epochs": [
+    1
+   ],
+   "searchable": true,
+   "published_at": "2026-02-22T00:00:00Z",
+   "true_from": "2025-02-01",
+   "title": "Prism investors",
+   "text": "Bluebird Capital is an investor in Prism Harbor.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": "wirecast-daily.test",
+    "registrant": "localpress.test"
+   }
+  },
+  {
+   "url": "https://dealwire.test/prism-harbor-investors",
+   "kind": "aggregator",
+   "epochs": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "searchable": true,
+   "published_at": "2026-03-10T00:00:00Z",
+   "true_from": "2025-02-01",
+   "title": "Prism investors data",
+   "text": "Prism Harbor has Bluebird Capital as an investor.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "dealwire.test"
+   }
+  },
+  {
+   "url": "https://dealwire.test/prism-harbor",
+   "kind": "aggregator",
+   "epochs": [
+    3
+   ],
+   "searchable": true,
+   "published_at": "2026-04-10T00:00:00Z",
+   "true_from": "2024-05-02",
+   "title": "Prism data",
+   "text": "Prism Harbor CTO: Dev Shah.\nPrism Harbor is backed by Northwind Ventures.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "dealwire.test"
+   }
+  },
+  {
+   "url": "https://dealwire.test/prism-harbor",
+   "kind": "aggregator",
+   "epochs": [
+    4
+   ],
+   "searchable": true,
+   "published_at": "2026-05-10T00:00:00Z",
+   "true_from": "2026-03-01",
+   "title": "Prism data",
+   "text": "Prism Harbor CEO: Bo Chan.",
+   "facts": {},
+   "lineage": {
+    "canonical": null,
+    "first_published_by": null,
+    "registrant": "dealwire.test"
+   }
+  }
+ ],
+ "research": {}
+}

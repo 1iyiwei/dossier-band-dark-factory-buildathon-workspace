@@ -19,7 +19,7 @@ T0 = "2026-03-01T09:00:00+00:00"
 
 
 def cand(value, url="https://a.test/p", true_from=None, kind="own", published=None):
-    return Candidate(value, url, f"excerpt {value}", "nimble", kind, published, true_from=true_from)
+    return Candidate(value, url, f"excerpt {value}", "nimble", kind, published, true_from=true_from, origin="a.test")
 
 
 def page(url, true_from, **slots):
@@ -34,8 +34,9 @@ class ScriptedStore:
         self.store = Store(self._build, journal)
         self.store.reset(FIXTURE)
 
-    def _build(self, domain, on_spend, stopped):
-        on_spend(5)
+    def _build(self, domain, ledger, stopped):
+        ledger.reserve(5)
+        ledger.settle(5, True)
         pages = self.script.pop(0)
         return BuildResult(pages, pages is not None)
 
