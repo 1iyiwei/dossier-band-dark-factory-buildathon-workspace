@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 import ledger_data
 
 HERE = pathlib.Path(__file__).parent
-ID = re.compile(r"\bS[23]-[A-Z]{2,3}-\d+\b|\b(?:[A-Z]{1,3}\d?-[0-9A-Z]+|[A-Z]\d-[A-Z0-9]+)\b")
+ID = re.compile(r"\bS[234]-[A-Z]{2,3}-\d+[b]?\b|\b(?:[A-Z]{1,3}\d?-[0-9A-Z]+|[A-Z]\d-[A-Z0-9]+)\b")
 junit, rev = sys.argv[1], sys.argv[2]
 log = pathlib.Path(sys.argv[3]).read_text() if len(sys.argv) > 3 else ""
 

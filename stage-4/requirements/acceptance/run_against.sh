@@ -4,7 +4,7 @@
 # BASE_URL: the service. MOCK_URL: mock web serving ./corpus with MOCK_ADMIN_TOKEN (default
 # local-admin); the service's NIMBLE_BASE_URL/TAVILY_BASE_URL must point at that mock.
 # BASE_URL_2 (optional): a second fresh instance, enables the cross-instance import test.
-# BASE_URL_S1 / BASE_URL_S2 (optional): the team's stage-1 / stage-2 service, wired to the same mock: upgrade tests.
+# BASE_URL_S1 / BASE_URL_S2 / BASE_URL_S3 (optional): the team's stage-1 / stage-2 / stage-3 service, wired to the same mock: upgrade tests.
 # RESTART_CMD (optional): shell command that SIGKILLs the service under test and starts it again (same filesystem);
 #   it returns when `docker start` returns: the tests wait for /health themselves (restart tests; skipped when unset).
 # The UI tests need Playwright + Chromium: PYTHON (default: the kickoff package's .venv if it has

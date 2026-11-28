@@ -53,7 +53,8 @@ def allowed_true_from(url, epoch):
 
 def six_view(f):
     """a field without the stage-3 additions, for comparison with what an older service returned"""
-    return {k: v for k, v in f.items() if k not in ("true_from", "learned_at")}
+    return {k: v for k, v in f.items() if k not in ("true_from", "learned_at", "origins", "corroborated",
+                                                       "corroborated_since")}
 
 
 @pytest.fixture(scope="module")

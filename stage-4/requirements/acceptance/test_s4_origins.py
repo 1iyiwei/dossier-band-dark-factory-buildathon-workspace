@@ -64,7 +64,7 @@ def test_kind_own_needs_the_company_as_registrant(s4):
 
 
 def test_registrant_lines_are_normalised_and_an_invalid_one_falls_back_to_the_host(s4):
-    """S4-LH-1 S4-LH-2 S4-OR-4 S4-OR-8 (origin = the normalised registrant; `WWW.Registry-One.TEST.` is registry-one.test;
+    """S4-LH-1 S4-LH-2 S4-OR-4 S4-OR-8 S4-OWN-3 (origin = the normalised registrant; `WWW.Registry-One.TEST.` is registry-one.test;
     a Registrant that is not a domain gives the host of the page's own URL; a lookalike has the company's domain)"""
     c = cands(s4.bodies[KM])
     assert {u: x["origin"] for u, x in c.items()} == {

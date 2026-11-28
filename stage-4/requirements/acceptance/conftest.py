@@ -8,6 +8,7 @@ Environment:
   BASE_URL_S1       optional running *stage-1* service (the team's final stage-1 image) wired to the
                     same mock: enables the stage-1 -> stage-3 export/import upgrade tests
   BASE_URL_S2       optional running *stage-2* service (final stage-2 image), same mock: stage-2 -> stage-3
+  BASE_URL_S3       optional running *stage-3* service (final stage-3 image), same mock: stage-3 -> stage-4 (test_s4_upgrade.py)
   RESTART_CMD       optional shell command that kills the service under test abruptly (SIGKILL), starts it
                     again on the same container filesystem and returns once it is healthy again (Restarts)
   HEADED=1          show the browser in the UI tests
@@ -40,6 +41,7 @@ MOCK_TOKEN = os.environ.get("MOCK_ADMIN_TOKEN", "local-admin")
 BASE2 = os.environ.get("BASE_URL_2", "").rstrip("/")
 BASE_S1 = os.environ.get("BASE_URL_S1", "").rstrip("/")
 BASE_S2 = os.environ.get("BASE_URL_S2", "").rstrip("/")
+BASE_S3 = os.environ.get("BASE_URL_S3", "").rstrip("/")
 RESTART_CMD = os.environ.get("RESTART_CMD", "")
 CORPUS_S2 = m.load()
 NOW0 = "2026-03-01T09:00:00+00:00"

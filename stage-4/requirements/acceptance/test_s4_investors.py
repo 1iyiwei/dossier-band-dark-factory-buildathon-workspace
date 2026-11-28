@@ -6,6 +6,7 @@ import oracle as o
 import s3model as s3
 from conftest import BASE, MOCK, UNKNOWN, ALL_FIELDS, check_build, ok_json
 from s3util import values
+from s3util import dt
 from s4util import V, single_build
 
 ABOUT, REG = "https://vantage-mill.test/about", "https://registry-open.test/vantage-mill"
@@ -105,7 +106,7 @@ def test_true_from_of_a_member_is_the_earliest_known_and_the_fields_is_the_lates
     assert {n: min(t for t in by[n] if t) for n in MEMBERS} == {
         "Bluebird Capital": "2022-01-01", "Northwind Ventures": "2022-01-01", "Orion Equity Partners": "2023-03-01",
         "Cedar Capital": "2025-01-01", "Index Ventures": "2025-01-01"}
-    assert f["learned_at"] == vm.body["researched_at"] or f["learned_at"][:19] == vm.body["researched_at"][:19]
+    assert dt(f["learned_at"]) == dt(vm.body["researched_at"])
 
 
 def test_origins_and_corroboration_of_the_investors_field(vm):

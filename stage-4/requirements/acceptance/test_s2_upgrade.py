@@ -158,7 +158,7 @@ def test_every_imported_field_gains_the_candidates_the_export_can_support(up, do
                 f"{name} {c['url']}: excerpt not copied from text that {c['provider']} served"
             assert o.supports(c["excerpt"], name, c["value"], domain)
             page = next(p for p in comp["pages"] if p["url"] == c["url"] and 0 in p["epochs"])
-            assert c["kind"] is None or c["kind"] == m.page_kind(page.get("kind"), c["url"], domain)
+            assert c["kind"] is None or c["kind"] == m.kind_of(page, c["url"], domain)
             pub = m.page_published(page.get("published_at"))
             assert c["published_at"] is None or (pub and m.parse_rfc3339(c["published_at"]) == pub)
     assert any(f["candidates"] for f in b["fields"].values())

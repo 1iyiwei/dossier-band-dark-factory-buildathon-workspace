@@ -8,9 +8,10 @@ STAGE_DIR="${STAGE_DIR:-$(cd "$HERE/../.." && pwd)}"
 KICKOFF_DIR="${KICKOFF_DIR:-/Users/lwei/Trees/band-dark-factory-buildathoan-workspace/sf-buildathon-2026}"
 S1_DIR="${S1_DIR:-$STAGE_DIR/../stage-1}"      # the team's final stage-1 service (upgrade tests); S1_DIR="" skips them
 S2_DIR="${S2_DIR:-$STAGE_DIR/../stage-2}"      # the team's final stage-2 service (upgrade tests); S2_DIR="" skips them
+S3_DIR="${S3_DIR:-$STAGE_DIR/../stage-3}"      # the team's final stage-3 service (upgrade tests); S3_DIR="" skips them
 TAG="an$$"
-NET="net-$TAG"; MOCKC="mock-$TAG"; SVC="svc-$TAG"; SVC2="svc2-$TAG"; SVC3="svc3-$TAG"; SVCS1="svcs1-$TAG"; SVCS2="svcs2-$TAG"
-cleanup() { docker rm -f "$MOCKC" "$SVC" "$SVC2" "$SVC3" "$SVCS1" "$SVCS2" >/dev/null 2>&1; docker network rm "$NET" >/dev/null 2>&1; }
+NET="net-$TAG"; MOCKC="mock-$TAG"; SVC="svc-$TAG"; SVC2="svc2-$TAG"; SVC3="svc3-$TAG"; SVCS1="svcs1-$TAG"; SVCS2="svcs2-$TAG"; SVCS3="svcs3-$TAG"
+cleanup() { docker rm -f "$MOCKC" "$SVC" "$SVC2" "$SVC3" "$SVCS1" "$SVCS2" "$SVCS3" >/dev/null 2>&1; docker network rm "$NET" >/dev/null 2>&1; }
 trap cleanup EXIT
 set -e
 docker build -q -t "dossier-web-$TAG" "$KICKOFF_DIR/challenges/dossier/web" >/dev/null
@@ -61,9 +62,16 @@ if [ -n "$S2_DIR" ] && [ -f "$S2_DIR/Dockerfile" ]; then
   PS2=$(docker port "$SVCS2" 8000/tcp | head -1 | sed 's/.*://')
   wait_health "$PS2" >/dev/null && BASE_S2="http://127.0.0.1:$PS2"
 fi
+BASE_S3=""
+if [ -n "$S3_DIR" ] && [ -f "$S3_DIR/Dockerfile" ]; then
+  docker build -q -t "dossier-svc3-$TAG" "$S3_DIR" >/dev/null
+  start_svc "$SVCS3" -e PORT=8000 -p 127.0.0.1::8000 "dossier-svc3-$TAG"
+  PS3=$(docker port "$SVCS3" 8000/tcp | head -1 | sed 's/.*://')
+  wait_health "$PS3" >/dev/null && BASE_S3="http://127.0.0.1:$PS3"
+fi
 RESTART="docker kill $SVC >/dev/null && docker start $SVC >/dev/null"
 set +e
-RESTART_CMD="$RESTART" BASE_URL_S2="$BASE_S2" BASE_URL="http://127.0.0.1:$P1" BASE_URL_2="http://127.0.0.1:$P2" BASE_URL_S1="$BASE_S1" MOCK_URL="http://127.0.0.1:$MOCK_PORT" \
+RESTART_CMD="$RESTART" BASE_URL_S2="$BASE_S2" BASE_URL_S3="$BASE_S3" BASE_URL="http://127.0.0.1:$P1" BASE_URL_2="http://127.0.0.1:$P2" BASE_URL_S1="$BASE_S1" MOCK_URL="http://127.0.0.1:$MOCK_PORT" \
   "$HERE/run_against.sh" "$@"
 RC=$?
 echo "DEP-4 resource peek: $(docker stats --no-stream --format '{{.Name}} mem={{.MemUsage}} cpu={{.CPUPerc}}' "$SVC")"
