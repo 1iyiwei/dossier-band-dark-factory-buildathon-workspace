@@ -157,8 +157,6 @@ class Dossier:
         for name in FIELDS:
             ranked = rank(found[name])
             values[name] = _value_view(ranked[0], ranked) if ranked else _no_value()
-        investors = investors_of(found[INVESTORS])
-        values[INVESTORS] = {key: investors[key] for key in ("value", "true_from", "citations")}
         chosen = select_by_title(found)
         if chosen:
             selected = [pick for _, pick, _ in chosen]
@@ -168,6 +166,8 @@ class Dossier:
                                   "true_from": latest_true_from(selected), "citations": citations}
         else:
             values[EXECUTIVES] = _no_value()
+        investors = investors_of(found[INVESTORS])
+        values[INVESTORS] = {key: investors[key] for key in ("value", "true_from", "citations")}
         return values
 
 

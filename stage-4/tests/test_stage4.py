@@ -181,6 +181,36 @@ class InvestorFieldTests(unittest.TestCase):
         self.assertEqual(self.entry([], old), "change")
 
 
+class FieldOrderTests(unittest.TestCase):
+    """Every response that lists a dossier's fields holds investors after executives."""
+    ORDER = ["legal_name", "hq_city", "ceo", "founded_year", "headcount_range", "funding_total", "executives",
+             "investors"]
+
+    def test_values_history_dossier_and_as_of_list_fields_in_order(self):
+        def build(domain, ledger, stopped):
+            page = PageVersion("https://x.test/a", "2026-01-01", (("investors", cand("Alpha Capital", kind="own")),))
+            return BuildResult([page], True)
+
+        store = Store(build)
+        store.reset(FIXTURE)
+        store.start_dossier("a.test")
+        for _ in range(500):
+            if store.get_dossier("a.test")["state"] == "ready":
+                break
+            threading.Event().wait(0.01)
+        as_of = parse_timestamp("2026-03-01T09:00:00+00:00")
+        responses = [store.get_dossier("a.test")["fields"], store.get_dossier("a.test", as_of)["fields"],
+                     store.values_at("a.test", "2026-02-01", None, None)["fields"],
+                     store.history("a.test")["fields"]]
+        imported = Store(build)
+        imported.import_state(store.export_state())
+        responses.append(imported.get_dossier("a.test")["fields"])
+        for fields in responses:
+            self.assertEqual(list(fields), self.ORDER)
+        self.assertEqual(store.values_at("a.test", "2026-02-01", None, None)["fields"]["investors"]["value"],
+                         ["Alpha Capital"])
+
+
 class BatchStoreTests(unittest.TestCase):
     """Batches through the store, with builds that spend what the test says."""
 
