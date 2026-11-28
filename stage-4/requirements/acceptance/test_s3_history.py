@@ -13,7 +13,7 @@ from s3util import M, EIGHT, T, changes_all, dt, history_of, run_timeline
 
 TYPES = {"legal_name": [], "hq_city": [], "founded_year": ["change"], "headcount_range": ["initial"],
          "funding_total": [], "ceo": ["initial", "change", "correction", "change", "change"],
-         "executives": ["initial", "change", "change", "correction", "change"]}
+         "executives": ["initial", "change", "change", "correction", "change"], "investors": []}
 # true_from of the selected value after each ready build (b0 b1 b2 b3 b4)
 TF = {"ceo": ["2021-04-01", "2026-03-20", "2026-01-01", None, None],
       "headcount_range": ["2020-01-01", "2020-01-01", "2019-06-01", "2020-01-01", "2020-01-01"],

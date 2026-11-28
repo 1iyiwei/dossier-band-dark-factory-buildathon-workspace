@@ -89,7 +89,7 @@ def test_executives_is_a_seventh_field_after_the_six(sc):
     is unchanged)"""
     for d in (EMB, PAX, MER, NW):
         b = sc.bodies[d]
-        assert list(b["fields"]) == list(FIELDS) + ["executives"], list(b["fields"])
+        assert list(b["fields"]) == list(FIELDS) + ["executives", "investors"], list(b["fields"])   # stage 4: investors last
         assert set(b["fields"]["executives"]) >= {"value", "status", "true_from", "learned_at", "citations", "candidates"}
         check_shape(b)
     lst = ok_json(sc.w.ada.get("/dossiers", params={"limit": 200}))["dossiers"]
